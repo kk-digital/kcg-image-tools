@@ -209,8 +209,3 @@ class ImageUtils:
         ImageUtils.__write_dict_to_yaml(images_info , output_directory , 'images-info.yml')
         
         return 
-
-if __name__ == "__main__": 
-    a = "AAasjsldjalsjdaoudoqweuojd;sfsd"
-    
-    print(base64.b64encode(bytes(hashlib.sha256(bytes(a , 'utf-8')).hexdigest() , 'utf-8')))

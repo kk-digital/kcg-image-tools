@@ -11,10 +11,7 @@ class ImageManipulation:
     # - parameters should be specifiable from command line, with defaults listed with --help and in readme.md (Google fire)
     # - utility to output a .png, showing these "training patches" produced from a specific 
     #           image or directory of images (size n x m in tiles/patches specified) (Work on it)
-    
-    # - option to extract patches on grid (offset of 32x32 pixels) or randomly 
-    #                         (When chosen to random what should be the number of patches?)
-    
+        
     # - option to specify "border" of N pixels, where patches will not be taken if they are within border region (What?!)
     # - ability to process N random files from input directory and produce N example images with square MxM grid of "random patches" of specified size.
     # - specifciation of output directory (Okay)
@@ -90,6 +87,41 @@ class ImageManipulation:
         
         return tiled_array
 
+    def __random_split(self, image: np.ndarray, tile_size: tuple , number_of_tiles: int) -> list[np.ndarray]: 
+        """Splits the given image into number of tiles with the given tile size with random locations.  
+
+        :param image: The image matrix needed for splitting into tiles. 
+        :type image: ndarray 
+        :param tile_size: the desired output for the patch/tile size 
+        :type tile_size: tuple
+        :param number_of_tiles: the number of randomly extracted tiles needed to be extracted from the image
+        :type number_of_tiles: int
+        :returns: a list of the tiles after splitting the given image
+        :rtype: list[ndarray] 
+        """
+        tiles = [] 
+        for counter in range(number_of_tiles): 
+            rand_x = random.randint(0 , image.shape[0]) - tile_size[0]
+            rand_y = random.randint(0 , image.shape[1]) - tile_size[1] 
+            tiles.append(image[rand_x: rand_x + tile_size[0], rand_y: rand_y + tile_size[1]])
+            
+        return tiles
+    
+    def __random_split_batch(self, images: list[np.ndarray], tile_size: tuple, number_of_tiles: int) -> list[list[np.ndarray]]: 
+        """Splits a batch of images into tiles with the given tile size with randomly generated offsets from the image
+
+        :param images: The images matrices needed for splitting into tiles. 
+        :type images: list[ndarray] 
+        :param tile_size: the desired output for the patch/tile size 
+        :type tile_size: tuple
+        :param number_of_tiles: the number of randomly extracted tiles needed to be extracted from the image
+        :type number_of_tiles: int
+        :returns: a list of lists each of them containing the extracted tiles form the image. 
+        :rtype: list[list[ndarray]] 
+        """  
+        return [self.__random_split(image, tile_size , number_of_tiles) for image in images] 
+    
+    
     def __stride_split_batch(self, images: list, tile_size: tuple) -> list: 
         """Splits the given images into equal tiles of the given tile size
 
