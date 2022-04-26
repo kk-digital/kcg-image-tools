@@ -56,6 +56,8 @@ class IntegerEncoder:
         :type value: int
         :param number_of_bits: the width of the representation 
         :type number_of_bits: int
+        :param type: Type of encoding to be applied to the value.
+        :type type: str
         :returns: list of integers as the encoded representation of the given value
         :rtype: list[int]
         """
