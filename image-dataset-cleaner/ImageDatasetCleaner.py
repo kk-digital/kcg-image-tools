@@ -1,6 +1,5 @@
 import base64
 import os 
-import re
 import shutil
 from PIL import Image
 import hashlib
@@ -183,7 +182,7 @@ def image_dataset_cleaner_cli(source_directory: str , output_directory: str, all
         :type source_directory: str
         :param output_directory: The directory to copy the images into it. 
         :type output_directory: str
-        :param allowed_formats: list of the allowed image formats to be considered in the copied folder 
+        :param allowed_formats: list of the allowed image formats to be considered in the copied folder Formats MUST be in Capilat letters.
         :type allowed_formats: list
         :param min_size: min target image size (if the image is less than it then it's ignored and not copied). 
         :type min_size: tuple
