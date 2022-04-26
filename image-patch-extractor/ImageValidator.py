@@ -1,5 +1,6 @@
 import os 
 import re
+from typing import Tuple
 from PIL import Image
 
 class ImageValidator: 
@@ -33,7 +34,7 @@ class ImageValidator:
         """
         return True if len(allowed_types) == 0 else (os.path.splitext(file)[1] in allowed_types)
 
-    def validate(directory: str , recursive: bool = False , allowed_types = []) -> list:
+    def validate(directory: str , recursive: bool = False , allowed_types = []) -> Tuple[list,list]:
         #FixME -> Add the steps of validation to be clear for the user. 
         """Validates all images contained in the path given with all it's subdirectories as well if recursive is true
         :param directory: The directory containing the files to be validated 
@@ -43,21 +44,21 @@ class ImageValidator:
         :type recursive: bool
         :param allowed_types: list of the allowed images extensions if it's empty then all image types will be considered 
         :type allowed_types: list
-        :returns: list of files that failed the validation 
+        :returns: A tuple of two lists the first are the valid image paths and the other is for the invalid ones.
         :rtype: list[str]
         """
         
         #gets the whole files from the directory 
         files_list = ImageValidator.get_files_list(directory , recursive)
-        #execlude only files 
+        #exclude only files 
         images_list = [file for file in files_list if ImageValidator.__allowed_type(file , allowed_types)]
         
         #List of invalid files to make the function return it
         failed_validation = set()
-        
+        valid_images = set() 
         #Remove any file that has non-base64 character as a file name 
         #Regular expression used to match strings containing only base64 chars 
-        #FixME add options to execlude ASCII characters as well.
+        #FixME add options to exclude ASCII characters as well.
         regular_exp = re.compile(r'^[a-zA-Z0-9+/=]*$')
         [failed_validation.add(image) for image in images_list if regular_exp.fullmatch(os.path.splitext(os.path.split(image)[-1])[0]) is None]
         
@@ -75,9 +76,10 @@ class ImageValidator:
                     failed_validation.add(image)
                     
                 im.verify()
+                valid_images.add(image)
             except Exception: 
                 #File is invalid because it's corrupted 
                 failed_validation.add(image)
             
             
-        return list(failed_validation)
+        return (list(valid_images), list(failed_validation))

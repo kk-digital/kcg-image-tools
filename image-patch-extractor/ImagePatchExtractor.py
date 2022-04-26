@@ -2,19 +2,19 @@ import numpy as np
 import cv2
 from PIL import Image
 import random
+import os
+from ImageValidator import ImageValidator
 
-class ImageManipulation: 
+class ImagePatchExtractor: 
     
     def __init__(self): 
         return 
-    # 1. I need a utility function that cuts up larger images into 32x32 pixel patches for training
-    # - parameters should be specifiable from command line, with defaults listed with --help and in readme.md (Google fire)
-    # - utility to output a .png, showing these "training patches" produced from a specific 
-    #           image or directory of images (size n x m in tiles/patches specified) (Work on it)
-        
-    # - option to specify "border" of N pixels, where patches will not be taken if they are within border region (What?!)
-    # - ability to process N random files from input directory and produce N example images with square MxM grid of "random patches" of specified size.
-    # - specifciation of output directory (Okay)
+# - option to specify "border" of N pixels, where patches will not be taken if they are within border region
+# - must be designed to use worker processes and up to N cores, with each worker process, processing one file.
+# - ability to process N random files from input directory and produce N example images with square MxM grid of "random patches" of specified size.
+# (Finish them now)
+# - readme.md file for the tool
+# - add cli tool. 
 
     def __horizontal_flip(self, image: np.ndarray) -> np.ndarray: 
         """applies horizontal flip to the image and returns a view of the flipped version
@@ -31,7 +31,7 @@ class ImageManipulation:
 
         :param images: The list of image matrices needed for for flipping
         :type images: list[ndarray] 
-        :returns: A list of view of the fliiped images after applying horizontal flipping. 
+        :returns: A list of view of the flipped images after applying horizontal flipping. 
         :rtype: list[ndarray] 
         """
         return [self.__horizontal_flip(image) if random.randint(0 , 1) % 2 == 0 else image for image in images]
@@ -42,9 +42,9 @@ class ImageManipulation:
         :type images: list[ndarray] 
         :param tile_size: The size of the images in the given list 
         :type tile_size: tuple
-        :param mean: the mean of the nnormal gaussian distribution 
+        :param mean: the mean of the normal gaussian distribution 
         :type mean: float
-        :param sigma: the sigma of the nnormal gaussian distribution 
+        :param sigma: the sigma of the normal gaussian distribution 
         :type sigma: float
         :returns: A list of view of the images after adding the noise to it. 
         :rtype: list[ndarray] 
@@ -121,6 +121,43 @@ class ImageManipulation:
         """  
         return [self.__random_split(image, tile_size , number_of_tiles) for image in images] 
     
+    def __concatenate_patches(self, patches: list[np.ndarray] , tile_size: tuple, output_size: tuple) -> np.ndarray: 
+        """Concatenates a list of patches into an array of a given size note that `output_size` should be divisible by `tile_size`
+
+        :param patches: The images matrices needed for splitting into tiles. 
+        :type patches: list[ndarray] 
+        :param tile_size: The size of each patch 
+        :type tile_size: tuple
+        :param output_size: The size of the output array after concatenating all the patches. 
+        :type output_size: tuple
+        :returns: a numpy array with `output_size` with the given patches concatenated inside it. 
+        :rtype: list[list[ndarray]] 
+        """  
+
+        result = np.ndarray(output_size)
+        
+        number_of_rows = output_size[0] // tile_size[0] 
+        number_of_cols = output_size[1] // tile_size[1] 
+        for row in range(number_of_rows): 
+            result[(row * number_of_rows):(row + 1) * number_of_rows,:] = np.hstack(patches[row * number_of_cols: (row + 1) * number_of_cols])
+            
+        return result
+
+    def __write_array_to_png(self, image: np.ndarray , output_directory: str , file_name: str) -> None:
+        """Writes the given numpy array into a `PNG` image and saves it into the specified directory. 
+
+        :param image: The numpy array containing the values to be written into the `PNG` image
+        :type image: ndarray
+        :param output_directory: The directory to save the resultant image. 
+        :type output_directory: str
+        :param file_name: The file name of the save image. 
+        :type file_name: str
+        :returns: None
+        :rtype: None
+        """  
+        Image.fromarray(image).save(os.path.join(output_directory , "{}.png".format(file_name))) 
+        
+        return  
     
     def __stride_split_batch(self, images: list, tile_size: tuple) -> list: 
         """Splits the given images into equal tiles of the given tile size
@@ -129,7 +166,7 @@ class ImageManipulation:
         :type image: list[ndarray] 
         :param tile_size: the desired output for the patch/tile size 
         :type tile_size: tuple
-        :returns: a list of the numpay arrays of tiles after splitting the given image
+        :returns: a list of the numpy arrays of tiles after splitting the given image
         :rtype: list 
         """
         return [self.__stride_split(image , tile_size) for image in images]
