@@ -100,7 +100,7 @@ class ImageManipulation:
         :rtype: list[ndarray] 
         """
         tiles = [] 
-        for counter in range(number_of_tiles): 
+        for _ in range(number_of_tiles): 
             rand_x = random.randint(0 , image.shape[0]) - tile_size[0]
             rand_y = random.randint(0 , image.shape[1]) - tile_size[1] 
             tiles.append(image[rand_x: rand_x + tile_size[0], rand_y: rand_y + tile_size[1]])
