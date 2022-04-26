@@ -4,6 +4,7 @@ from PIL import Image
 import random
 import os
 from ImageValidator import ImageValidator
+import fire 
 
 class ImagePatchExtractor: 
     
@@ -11,7 +12,6 @@ class ImagePatchExtractor:
         return 
 # - option to specify "border" of N pixels, where patches will not be taken if they are within border region
 # - must be designed to use worker processes and up to N cores, with each worker process, processing one file.
-# - ability to process N random files from input directory and produce N example images with square MxM grid of "random patches" of specified size.
 # (Finish them now)
 # - readme.md file for the tool
 # - add cli tool. 
@@ -195,3 +195,16 @@ class ImagePatchExtractor:
         return [self.__resize(image , dsize) for image in images]
     
     
+    def extract_patches(self, source_directory: str , output_directory: str , split_patches_type: str = "random" , tile_size: tuple = (32 , 32), noise: str | None = None , 
+                            flip_patches: bool = False) -> None: 
+        
+        
+        return 
+    
+
+def extract_patches_cli_tool(): 
+    patch_extractor = ImagePatchExtractor()
+    patch_extractor.extract_patches('./data/icons' , './result')
+    
+if __name__ == "__main__": 
+    fire.Fire(extract_patches_cli_tool)
