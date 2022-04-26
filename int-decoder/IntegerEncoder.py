@@ -9,7 +9,7 @@ class IntegerEncoder:
         return 
     
     
-    def __binary_encoder(self, value: int, number_of_bits: int | None = 32) -> list: 
+    def __binary_encoder(self, value: int, number_of_bits: int = 32) -> list: 
         """ a function to encode a given integer into its binary representation or 2's complement if a -ve integer was given. 
         :param value: The integer value to be encoded. 
         :type value: int
@@ -20,7 +20,7 @@ class IntegerEncoder:
         """
         return [int(bit) for bit in np.binary_repr(value , number_of_bits)]
     
-    def __grey_encoder(self, value: int , number_of_bits: int | None = 32) -> list: 
+    def __grey_encoder(self, value: int , number_of_bits: int = 32) -> list: 
         """ a function to encode a given integer into its grey encoded representation. 
         :param value: The integer value to be encoded. 
         :type value: int
@@ -50,7 +50,7 @@ class IntegerEncoder:
     
         return grey_encoded
     
-    def encode(self, value: int,  number_of_bits: int | None = 32, type: str = "binary") -> list: 
+    def encode(self, value: int,  number_of_bits: int = 32, type: str = "binary") -> list: 
         """ a function to encode a given integer into the slected encodings type 
         :param value: The integer value to be encoded. 
         :type value: int
