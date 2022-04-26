@@ -1,8 +1,10 @@
+import math
 import numpy as np
 import cv2
 from PIL import Image
 import random
 import os
+import string
 from ImageValidator import ImageValidator
 import fire 
 
@@ -101,9 +103,9 @@ class ImagePatchExtractor:
         """
         tiles = [] 
         for _ in range(number_of_tiles): 
-            rand_x = random.randint(0 , image.shape[0]) - tile_size[0]
-            rand_y = random.randint(0 , image.shape[1]) - tile_size[1] 
-            tiles.append(image[rand_x: rand_x + tile_size[0], rand_y: rand_y + tile_size[1]])
+            rand_x = random.randint(0 , image.shape[0] - tile_size[0]) 
+            rand_y = random.randint(0 , image.shape[1] - tile_size[1] ) 
+            tiles.append(image[rand_x: rand_x + tile_size[0], rand_y: rand_y + tile_size[1],:])
             
         return tiles
     
@@ -134,12 +136,12 @@ class ImagePatchExtractor:
         :rtype: list[list[ndarray]] 
         """  
 
-        result = np.ndarray(output_size)
+        result = np.ndarray((output_size[0] , output_size[1] , 3))
         
         number_of_rows = output_size[0] // tile_size[0] 
         number_of_cols = output_size[1] // tile_size[1] 
         for row in range(number_of_rows): 
-            result[(row * number_of_rows):(row + 1) * number_of_rows,:] = np.hstack(patches[row * number_of_cols: (row + 1) * number_of_cols])
+            result[(row * tile_size[0]):(row + 1) * tile_size[0],:] = np.hstack(patches[row * number_of_cols: (row + 1) * number_of_cols])
             
         return result
 
@@ -155,7 +157,7 @@ class ImagePatchExtractor:
         :returns: None
         :rtype: None
         """  
-        Image.fromarray(image).save(os.path.join(output_directory , "{}.png".format(file_name))) 
+        Image.fromarray(image.astype(np.uint8)).save(os.path.join(output_directory , "{}.png".format(file_name))) 
         
         return  
     
@@ -195,16 +197,63 @@ class ImagePatchExtractor:
         return [self.__resize(image , dsize) for image in images]
     
     
-    def extract_patches(self, source_directory: str , output_directory: str , split_patches_type: str = "random" , tile_size: tuple = (32 , 32), noise: str | None = None , 
-                            flip_patches: bool = False) -> None: 
+    def extract_patches(
+        self, source_directory: str, output_directory: str, allowed_types: list = [], 
+            split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512) , noise: bool = False, flip_patches: bool = False, batch_size: int = 8) -> None: 
         
+        #Validate the image in the source directory and get the valid image paths list. 
+        validator = ImageValidator()
+        valid_images_list , _ = validator.validate(source_directory, False , allowed_types)
         
+        os.makedirs(output_directory , exist_ok = True)
+        images = [] 
+        patches = [] 
+        for image in valid_images_list: 
+            #open the image file and convert it into a numpy array. 
+            image = np.asarray(Image.open(image).convert('RGB'))
+            images.append(image)
+            
+            if len(images) >= batch_size: 
+                #number of images has exceeded limit, should apply the extraction now
+                #check the type of patches split
+                if split_patches_type == 'random':
+                    number_of_tiles = (images[0].shape[0] * images[0].shape[1]) // (tile_size[0] * tile_size[1])
+                    patches = self.__random_split_batch(images , tile_size, number_of_tiles)
+                    patches = [patch for value in patches for patch in value]
+                elif split_patches_type == 'grid': 
+                    patches = self.__stride_split_batch(images , tile_size)
+                
+                
+                #add noise if user set it to True 
+                if noise: 
+                    patches = self.__add_gaussian_noise(patches , tile_size).copy()
+                #add horizontal flipping for data augmentation if the use set it to True 
+                if flip_patches: 
+                    patches = self.__horizontal_flip_batch(patches)
+                
+                no_of_elements = (output_png_size[0] // tile_size[0]) * (output_png_size[1] // tile_size[1])
+                
+                for i in range(len(patches) // no_of_elements): 
+                    concatendated = self.__concatenate_patches(patches[i * no_of_elements: (i + 1) * no_of_elements] , tile_size , output_png_size)
+                    self.__write_array_to_png(concatendated , output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
+                
+                images = [] 
+                #remaining patches that didn't fit in the output_png size 
+                if len(patches) % no_of_elements != 0: 
+                    offset = len(patches) // no_of_elements
+                    number_of_values = len(patches[offset * no_of_elements:])
+                    concatendated = self.__concatenate_patches(patches[offset * no_of_elements:] , tile_size , (tile_size[0] * number_of_values , tile_size[1]))
+                    self.__write_array_to_png(concatendated , output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
+
         return 
     
 
-def extract_patches_cli_tool(): 
+def extract_patches_cli_tool(self, source_directory: str, output_directory: str, allowed_types: list = [], 
+            split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512) , noise: bool = False, flip_patches: bool = False, batch_size: int = 8): 
+    
     patch_extractor = ImagePatchExtractor()
-    patch_extractor.extract_patches('./data/icons' , './result')
+    patch_extractor.extract_patches(source_directory , output_directory , allowed_types , split_patches_type, tile_size, output_png_size , noise , flip_patches , batch_size)
     
 if __name__ == "__main__": 
+
     fire.Fire(extract_patches_cli_tool)

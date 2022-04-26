@@ -34,7 +34,7 @@ class ImageValidator:
         """
         return True if len(allowed_types) == 0 else (os.path.splitext(file)[1] in allowed_types)
 
-    def validate(directory: str , recursive: bool = False , allowed_types = []) -> Tuple[list,list]:
+    def validate(self, directory: str , recursive: bool = False , allowed_types = []) -> Tuple[list,list]:
         #FixME -> Add the steps of validation to be clear for the user. 
         """Validates all images contained in the path given with all it's subdirectories as well if recursive is true
         :param directory: The directory containing the files to be validated 
