@@ -66,6 +66,7 @@ Example of `images-info.json`
         "base64sha256": "NzRlMDRlN2JkMjFiZjBmNzU2ZWQ5ZmE1NWNkNzdhYjU3NzBmZjUwYmQ0ODM4NTYzYzc4MjMyMTcwYjc5OGM1YQ=="
     },
 }
+```
 Example of `failed-images.json`
 ```json
 {
