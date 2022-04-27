@@ -12,11 +12,6 @@ class ImagePatchExtractor:
     
     def __init__(self): 
         return 
-# - option to specify "border" of N pixels, where patches will not be taken if they are within border region
-# - must be designed to use worker processes and up to N cores, with each worker process, processing one file.
-# (Finish them now)
-# - readme.md file for the tool
-# - add cli tool. 
 
     def __horizontal_flip(self, image: np.ndarray) -> np.ndarray: 
         """applies horizontal flip to the image and returns a view of the flipped version
