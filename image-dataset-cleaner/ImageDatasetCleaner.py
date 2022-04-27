@@ -3,8 +3,8 @@ import os
 import shutil
 from PIL import Image
 import hashlib
-import yaml
 import fire 
+import json 
 
 class ImageDatasetCleaner: 
     
@@ -27,19 +27,19 @@ class ImageDatasetCleaner:
             return [os.path.join(directory , path) for path in os.listdir(directory)]
 
 
-    def __write_dict_to_yaml(info: dict , folder_path: str , file_name: str) -> None: 
-        """ Writes an dict object into yaml file given the output folder and file name to write in. 
-        :param info: The dictionary to be written in the YAML file 
+    def __write_dict_to_json(info: dict , folder_path: str , file_name: str) -> None: 
+        """ Writes an dict object into json file given the output folder and file name to write in. 
+        :param info: The dictionary to be written in the JSON file 
         :type info: dict
         :param folder_path: the output folder to write the file in it. 
         :type folder_path: str
-        :param file_name: the yaml file name to be written, 
+        :param file_name: the json file name to be written, 
         :type file_name: str
         :returns: None
         :rtype: None
         """
-        with open(os.path.join(folder_path , file_name), 'w') as yaml_file:
-            yaml.dump(info , yaml_file, default_flow_style = False)
+        with open(os.path.join(folder_path , file_name), 'w') as json_file:
+            json.dump(info , json_file , indent = 4)
 
     def __base64url_encode(object: str) -> str: 
         """ encodes a string into base64url format 
@@ -159,9 +159,9 @@ class ImageDatasetCleaner:
 
             
             
-        #Write the yaml files into the same output directory 
-        ImageDatasetCleaner.__write_dict_to_yaml(failed_images , output_directory , 'failed-images.yml')
-        ImageDatasetCleaner.__write_dict_to_yaml(images_info , output_directory , 'images-info.yml')
+        #Write the json files into the same output directory 
+        ImageDatasetCleaner.__write_dict_to_json(failed_images , output_directory , 'failed-images.json')
+        ImageDatasetCleaner.__write_dict_to_json(images_info , output_directory , 'images-info.json')
         
         return 
 
@@ -170,8 +170,8 @@ class ImageDatasetCleaner:
 def image_dataset_cleaner_cli(source_directory: str , output_directory: str, allowed_formats = ['PNG' , 'JPEG'],
                                 min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024)) -> None: 
         """ Given a source directory containing images, it applies some conditions and copies 
-                        the valid images into the `output_directory` and two yml files of the status of processed images 
-                        saved in the same output directory with names `failed-images.yml` and `images-info.yml`
+                        the valid images into the `output_directory` and two json files of the status of processed images 
+                        saved in the same output directory with names `failed-images.json` and `images-info.json`
                 
             applied conditions are: 
                 1-Make sure if the image file is not corrupted
