@@ -51,7 +51,7 @@ class ImagePatchExtractor:
         :returns: A list of view of the images after adding the noise to it. 
         :rtype: list[ndarray] 
         """
-        noise = np.random.normal(mean , sigma , tile_size)
+        noise = np.random.normal(mean , sigma , (tile_size[0] , tile_size[1], 3))
         #Add the gaussian noise to all the images/tiles within the list 
         noisy_images = [(image + noise) for image in images]
         #return the images after being clipped as it might have exceeded the limit because of the noise 
@@ -200,7 +200,30 @@ class ImagePatchExtractor:
     def extract_patches(
         self, source_directory: str, output_directory: str, allowed_types: list = [], 
             split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512) , noise: bool = False, flip_patches: bool = False, batch_size: int = 8) -> None: 
-        
+        """Method to apply extracting patches given a set of options by the user.
+        :param `source_directory`: The source directory containing the set of images to extract patches from them. 
+        :type `source_directory`: str
+        :param `output_directory`: The output directory to save the `PNG` images of concatenated patches. 
+        :type `output_directory`: str
+        :param `allowed_types`: a list of allowed images formats (Image codecs) to be considered within the dataset it accepts all 
+                types when left as an empty list, default is `[]`
+        :type `allowed_types`: list
+        :param `split_patches_type`: Type of patch splitting, `random` or `grid` default is `random` 
+        :type `split_patches_type`: str
+        :param `tile_size`: The desired patch size, default is `(32,32)`
+        :type `tile_size`: tuple(int , int)
+        :param `output_png_size`: The output size of the `PNG` image of concatenated patches, note it should be divisible by `tile_size` default is `(512,512)`
+        :type `output_png_size`: tuple(int , int)
+        :param `noise`: When `True` it adds `Gaussian` noise to the output patches, default is `False` 
+        :type `noise`: bool
+        :param `flip_patches`: When `True` it flips the patches horizontally with probability of 50%, default is `False` 
+        :type `flip_patches`: bool
+        :param `batch_size`: Number of images to process at a time, default is `8`
+        :type `batch_size`: int
+        :returns: None
+        :rtype: None
+        """
+
         #Validate the image in the source directory and get the valid image paths list. 
         validator = ImageValidator()
         valid_images_list , _ = validator.validate(source_directory, False , allowed_types)
@@ -208,6 +231,8 @@ class ImagePatchExtractor:
         os.makedirs(output_directory , exist_ok = True)
         images = [] 
         patches = [] 
+        cur_working_batch = 0 
+        
         for image in valid_images_list: 
             #open the image file and convert it into a numpy array. 
             image = np.asarray(Image.open(image).convert('RGB'))
@@ -216,6 +241,7 @@ class ImagePatchExtractor:
             if len(images) >= batch_size: 
                 #number of images has exceeded limit, should apply the extraction now
                 #check the type of patches split
+                cur_working_batch += 1
                 if split_patches_type == 'random':
                     number_of_tiles = (images[0].shape[0] * images[0].shape[1]) // (tile_size[0] * tile_size[1])
                     patches = self.__random_split_batch(images , tile_size, number_of_tiles)
@@ -226,7 +252,7 @@ class ImagePatchExtractor:
                 
                 #add noise if user set it to True 
                 if noise: 
-                    patches = self.__add_gaussian_noise(patches , tile_size).copy()
+                    patches = self.__add_gaussian_noise(patches , tile_size)
                 #add horizontal flipping for data augmentation if the use set it to True 
                 if flip_patches: 
                     patches = self.__horizontal_flip_batch(patches)
@@ -244,12 +270,37 @@ class ImagePatchExtractor:
                     number_of_values = len(patches[offset * no_of_elements:])
                     concatendated = self.__concatenate_patches(patches[offset * no_of_elements:] , tile_size , (tile_size[0] * number_of_values , tile_size[1]))
                     self.__write_array_to_png(concatendated , output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
-
+                
+                print("Finished {} batches out of {} total batches.".format(cur_working_batch , len(valid_images_list) // batch_size))
         return 
     
 
-def extract_patches_cli_tool(self, source_directory: str, output_directory: str, allowed_types: list = [], 
+def extract_patches_cli_tool(source_directory: str, output_directory: str, allowed_types: list = [], 
             split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512) , noise: bool = False, flip_patches: bool = False, batch_size: int = 8): 
+    
+    """Method to apply extracting patches given a set of options by the user.
+    
+    :param source_directory: The source directory containing the set of images to extract patches from them. 
+    :type source_directory: str
+    :param output_directory: The output directory to save the `PNG` images of concatenated patches. 
+    :type output_directory: str
+    :param allowed_types: a list of allowed images formats (Image codecs) to be considered within the dataset. 
+    :type allowed_types: list
+    :param split_patches_type: Type of patch splitting, `random` or `grid`
+    :type split_patches_type: str
+    :param tile_size: The desired patch size, default is `(32,32)`
+    :type tile_size: tuple(int , int)
+    :param output_png_size: The output size of the `PNG` image of concatenated patches, note it should be divisible by `tile_size`
+    :type output_png_size: tuple(int , int)
+    :param noise: When `True` it adds `Gaussian` noise to the output patches
+    :type noise: bool
+    :param flip_patches: When `True` it flips the patches horizontally with probability of 50%
+    :type flip_patches: bool
+    :param batch_size: Number of images to process at a time
+    :type batch_size: int
+    :returns: None
+    :rtype: None
+    """
     
     patch_extractor = ImagePatchExtractor()
     patch_extractor.extract_patches(source_directory , output_directory , allowed_types , split_patches_type, tile_size, output_png_size , noise , flip_patches , batch_size)
