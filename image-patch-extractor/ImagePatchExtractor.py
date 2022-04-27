@@ -57,7 +57,7 @@ class ImagePatchExtractor:
         #return the images after being clipped as it might have exceeded the limit because of the noise 
         return [np.clip(noisy_image , 0 , 255) for noisy_image in noisy_images]
         
-    def __stride_split(image: np.ndarray, tile_size: tuple) -> np.ndarray:
+    def __stride_split(self, image: np.ndarray, tile_size: tuple) -> np.ndarray:
         """Splits the given image into equal tiles of the given tile size
 
         :param image: The image matrix needed for splitting into tiles. 
@@ -88,6 +88,18 @@ class ImagePatchExtractor:
         )
         
         return tiled_array
+    
+    def __stride_split_batch(self, images: list, tile_size: tuple) -> list: 
+        """Splits the given images into equal tiles of the given tile size
+
+        :param image: The list of images matrix needed for splitting into tiles. 
+        :type image: list[ndarray] 
+        :param tile_size: the desired output for the patch/tile size 
+        :type tile_size: tuple
+        :returns: a list of the numpy arrays of tiles after splitting the given image
+        :rtype: list 
+        """
+        return [self.__stride_split(image , tile_size) for image in images]
 
     def __random_split(self, image: np.ndarray, tile_size: tuple , number_of_tiles: int) -> list[np.ndarray]: 
         """Splits the given image into number of tiles with the given tile size with random locations.  
@@ -160,19 +172,7 @@ class ImagePatchExtractor:
         Image.fromarray(image.astype(np.uint8)).save(os.path.join(output_directory , "{}.png".format(file_name))) 
         
         return  
-    
-    def __stride_split_batch(self, images: list, tile_size: tuple) -> list: 
-        """Splits the given images into equal tiles of the given tile size
-
-        :param image: The list of images matrix needed for splitting into tiles. 
-        :type image: list[ndarray] 
-        :param tile_size: the desired output for the patch/tile size 
-        :type tile_size: tuple
-        :returns: a list of the numpy arrays of tiles after splitting the given image
-        :rtype: list 
-        """
-        return [self.__stride_split(image , tile_size) for image in images]
-    
+        
     def __resize(self, image: np.ndarray , dsize: tuple = (32 , 32)) -> np.ndarray:
         """Resizes the given image to the size given as tuple 
 
@@ -247,8 +247,15 @@ class ImagePatchExtractor:
                     patches = self.__random_split_batch(images , tile_size, number_of_tiles)
                     patches = [patch for value in patches for patch in value]
                 elif split_patches_type == 'grid': 
-                    patches = self.__stride_split_batch(images , tile_size)
-                
+                    all_patches = self.__stride_split_batch(images , tile_size)
+                    tmp = [] 
+                    for image in all_patches: 
+                        for x in range(image.shape[0]): 
+                            for y in range(image.shape[1]): 
+                                tmp.append(image[x,y,:,:,:])
+                    
+                    patches = tmp 
+                    
                 
                 #add noise if user set it to True 
                 if noise: 
