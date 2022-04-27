@@ -26,8 +26,6 @@ pip install -r src/to/dir/requirements.txt
 
 * `max_size` _[tuple(int,int)]_ - _[optional]_ - Max target image size (if the image is larger than it then it's ignored and not copied), default is `(16384,16384)`
 
-`"sandstone"`.
-
 ## Example Usage
 
 ```
