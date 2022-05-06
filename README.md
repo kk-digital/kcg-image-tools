@@ -26,6 +26,14 @@ Given a `source directory` containing images, it applies some conditions and cop
 
 For more info about the tool and usage instructions check this [link](image-dataset-cleaner)
 
+# ImageDatasetPreview
+A standalone tool for image dataset preview. 
+
+Given a `source directory` containing images, the tool reads all the images in this directory scale them down to a size provided from the user and then concatenates those scaled images into a matrix shaped image with those small images as elements, and those matrix images are saved in PNG formats in the `output_directory` provided by the user. 
+
+For more info about the tool and usage instructions check this [link](image-dataset-preview)
+
+
 # IntegerEncoder
 A standalone tool for encoding integers into other chosen codes. 
 
