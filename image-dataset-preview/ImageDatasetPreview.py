@@ -6,6 +6,8 @@ import string
 from PIL import Image 
 import numpy as np 
 import fire 
+import warnings
+
 
 class ImageDatasetPreview: 
     def __init__(self): 
@@ -30,7 +32,7 @@ class ImageDatasetPreview:
 
         return 'L' if color_mode.lower() == 'grey' else 'RGB'
     
-    def preview_image_dataset(self, source_directory: str, output_directory: str,  image_size: tuple[int, int] = (32 , 32), 
+    def preview_image_dataset(self, source_directory: str, output_directory: str,  image_size: tuple[int, int] = (64 , 64), 
                                 matrix_size: tuple[int, int] = (32 , 32), color_mode: str = 'rgb' , images_order_mode: str = 'sorted') -> None: 
         """ Given a source directory containing images,the tool reads this images scale them down and concatenates them into large image 
                 matrix with a given size for preview.
@@ -86,34 +88,35 @@ class ImageDatasetPreview:
             
             #save the image file in the output directory. 
             matrix_img.save(os.path.join(output_directory, ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))) + '.png')
-            
+            print("finished batch {} out of {} batches".format(batch + 1, ((len(images) + batch_size - 1) // batch_size)))
         return 
     
     
-def image_dataset_preview_cli(source_directory: str, output_directory: str,  image_size: tuple[int, int] = (32 , 32), 
-                                matrix_size: tuple[int, int] = (32 , 32), color_mode: str = 'rgb' , images_order_mode: str = 'sorted') -> None: 
+def image_dataset_preview_cli(source_directory: str, output_directory: str,  image_size: tuple = (64 , 64), 
+                                        matrix_size: tuple = (32 , 32), color_mode: str = 'rgb' , images_order_mode: str = 'sorted') -> None: 
     """ Given a source directory containing images,the tool reads this images scale them down and concatenates them into large image 
             matrix with a given size for preview.
                     
-    :param source_directory: The source directory containing the images.
-    :type source_directory: str
-    :param output_directory: The directory to store the preview images inside it. 
-    :type output_directory: str
-    :param image_size: The size to scale down the images to before being added to the preview matrix image. 
-    :type image_size: tuple[int,int]
-    :param matrix_size: The size of the preview matrix image (number of images to be included as width and height of the matrix)
-    :type matrix_size: tuple[int,int]
-    :param color_mode: the color mode of images to be `grey` or `rgb`, default is `rgb` 
-    :type color_mode: str
-    :param images_order_mode: The order of images of preview to be random (shuffled) or sorted based on the image file name, options are `random` or `sorted` default is `sorted`
-    :type images_order_mode: str
-    :returns: None
-    :rtype: None
+        :param source_directory: The source directory containing the images.
+        :type source_directory: str
+        :param output_directory: The directory to store the preview images inside it. 
+        :type output_directory: str
+        :param image_size: The size to scale down the images to before being added to the preview matrix image. 
+        :type image_size: tuple[int,int]
+        :param matrix_size: The size of the preview matrix image (number of images to be included as width and height of the matrix)
+        :type matrix_size: tuple[int,int]
+        :param color_mode: the color mode of images to be `grey` or `rgb`, default is `rgb` 
+        :type color_mode: str
+        :param images_order_mode: The order of images of preview to be random (shuffled) or sorted based on the image file name, options are `random` or `sorted` default is `sorted`
+        :type images_order_mode: str
+        :returns: None
+        :rtype: None
     """
     preview_dataset = ImageDatasetPreview()
     
     preview_dataset.preview_image_dataset(source_directory , output_directory, image_size, matrix_size, color_mode, images_order_mode)
-    return 
 
 if __name__ == "__main__":     
+    warnings.filterwarnings("ignore")
+
     fire.Fire(image_dataset_preview_cli)
