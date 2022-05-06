@@ -6,6 +6,7 @@ Set of helping tools for cleaning image datasets and extracting patches from thi
 There is currently 3 standalone tools in the project 
 - [ImagePatchExtractor](#ImagePatchExtractor)
 - [ImageDatasetCleaner](#ImageDatasetCleaner)
+- [ImageDatasetPreview](#ImageDatasetPreview)
 - [IntegerEncoder](#IntegerEncoder)
 
 # ImagePatchExtractor
