@@ -29,7 +29,7 @@ pip install -r src/to/dir/requirements.txt
 ## Example Usage
 
 ```
-python src/to/dir/ImageDatasetCleaner.py source_directory = './my-dataset' output_directory='./cleaned-dataset'
+python src/to/dir/ImageDatasetCleaner.py --source_directory = './my-dataset' --output_directory='./cleaned-dataset'
 ```
 
 > Note that if the `output directory` is not created the tool automatically creates it for you. 
