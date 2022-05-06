@@ -34,7 +34,7 @@ pip install -r src/to/dir/requirements.txt
 ## Example Usage
 
 ```
-python src/to/dir/ImagePatchExtractor.py source_directory = './my-dataset' output_directory='./extracted-random-patches'
+python src/to/dir/ImagePatchExtractor.py --source_directory = './my-dataset' --output_directory='./extracted-random-patches'
 ```
 
 > Note that if the `output directory` is not created the tool automatically creates it for you. 
