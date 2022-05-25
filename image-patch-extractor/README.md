@@ -24,11 +24,13 @@ pip install -r src/to/dir/requirements.txt
 
 * `split_patches_type` _[str]_ - _[optional]_ Type of patch extraction applied to the set of images, available options are `random` or `grid`, `random` is taking the patches at random locations of the image while `grid` extracting patches with offset of the `tile_size`, default is `random`. 
 
-* `output_png_size` _[tuple(int,int)]_ - _[optional]_ The output size of the `PNG` image of concatenated patches, note it should be divisible by `tile_size`.
+* `output_png_size` _[tuple(int,int)]_ - _[optional]_ The output size of the `PNG` image of concatenated patches, note it should be divisible by `tile_size`, default is `(512,512)`
 
 * `noise` _[bool]_ - _[optional]_ When `True` it adds `Gaussian` noise to the output patches
 * `flip_patches` _[bool]_ - _[optional]_  When `True` it flips the patches horizontally with probability of 50%patches, note it should be divisible by `tile_size`.
 
+* `number_of_tiles` _[int]_ - _[optional]_ Number of tiles to be extracted if the `split_patches_type` param was set to `random`,
+                if it was not set then the tool will set it to the number of grid splits in the image with size of `tile_size`
 * `batch_size` _[int]_ - _[optional]_ Number of images to process at a time.
 
 ## Example Usage

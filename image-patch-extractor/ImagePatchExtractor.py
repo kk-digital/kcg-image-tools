@@ -194,7 +194,7 @@ class ImagePatchExtractor:
     
     def extract_patches(
         self, source_directory: str, output_directory: str, allowed_types: list = [], 
-            split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512) , noise: bool = False, flip_patches: bool = False, batch_size: int = 8) -> None: 
+            split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512) , noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, batch_size: int = 8) -> None: 
         """Method to apply extracting patches given a set of options by the user.
         :param `source_directory`: The source directory containing the set of images to extract patches from them. 
         :type `source_directory`: str
@@ -213,6 +213,9 @@ class ImagePatchExtractor:
         :type `noise`: bool
         :param `flip_patches`: When `True` it flips the patches horizontally with probability of 50%, default is `False` 
         :type `flip_patches`: bool
+        :param `number_of_tiles`: Number of tiles to be extracted if the `split_patches_type` param was set to `random`,
+                    if it was not set then the tool will set it to the number of grid splits in the image with size of `tile_size`.  
+        :type `number_of_tiles`: int
         :param `batch_size`: Number of images to process at a time, default is `8`
         :type `batch_size`: int
         :returns: None
@@ -227,18 +230,19 @@ class ImagePatchExtractor:
         images = [] 
         patches = [] 
         cur_working_batch = 0 
-        
         for image in valid_images_list: 
             #open the image file and convert it into a numpy array. 
             image = np.asarray(Image.open(image).convert('RGB'))
             images.append(image)
-            
-            if len(images) >= batch_size: 
+            if len(images) >= 1: 
                 #number of images has exceeded limit, should apply the extraction now
                 #check the type of patches split
                 cur_working_batch += 1
                 if split_patches_type == 'random':
-                    number_of_tiles = (images[0].shape[0] * images[0].shape[1]) // (tile_size[0] * tile_size[1])
+                    #If it was not set by the user then take the splits of grid size. 
+                    if number_of_tiles is None: 
+                        number_of_tiles = (images[0].shape[0] * images[0].shape[1]) // (tile_size[0] * tile_size[1])
+                    
                     patches = self.__random_split_batch(images , tile_size, number_of_tiles)
                     patches = [patch for value in patches for patch in value]
                 elif split_patches_type == 'grid': 
@@ -278,7 +282,7 @@ class ImagePatchExtractor:
     
 
 def extract_patches_cli_tool(source_directory: str, output_directory: str, allowed_types: list = [], 
-            split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512) , noise: bool = False, flip_patches: bool = False, batch_size: int = 8): 
+            split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512) , noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, batch_size: int = 8): 
     
     """Method to apply extracting patches given a set of options by the user.
     
@@ -298,6 +302,9 @@ def extract_patches_cli_tool(source_directory: str, output_directory: str, allow
     :type noise: bool
     :param flip_patches: When `True` it flips the patches horizontally with probability of 50%
     :type flip_patches: bool
+    :param `number_of_tiles`: Number of tiles to be extracted if the `split_patches_type` param was set to `random`,
+                if it was not set then the tool will set it to the number of grid splits in the image with size of `tile_size`.  
+    :type `number_of_tiles`: int
     :param batch_size: Number of images to process at a time
     :type batch_size: int
     :returns: None
@@ -305,7 +312,7 @@ def extract_patches_cli_tool(source_directory: str, output_directory: str, allow
     """
     
     patch_extractor = ImagePatchExtractor()
-    patch_extractor.extract_patches(source_directory , output_directory , allowed_types , split_patches_type, tile_size, output_png_size , noise , flip_patches , batch_size)
+    patch_extractor.extract_patches(source_directory , output_directory , allowed_types , split_patches_type, tile_size, output_png_size , noise , flip_patches, number_of_tiles, batch_size)
     
 if __name__ == "__main__": 
 
