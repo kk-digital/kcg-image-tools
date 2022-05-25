@@ -1,4 +1,5 @@
 import math
+import time
 import numpy as np
 import cv2
 from PIL import Image
@@ -310,10 +311,11 @@ def extract_patches_cli_tool(source_directory: str, output_directory: str, allow
     :returns: None
     :rtype: None
     """
-    
+    start_time = time.time() 
     patch_extractor = ImagePatchExtractor()
     patch_extractor.extract_patches(source_directory , output_directory , allowed_types , split_patches_type, tile_size, output_png_size , noise , flip_patches, number_of_tiles, batch_size)
     
+    print("Process took {:.2f} seconds to finish your task".format(time.time() - start_time))
 if __name__ == "__main__": 
 
     fire.Fire(extract_patches_cli_tool)
