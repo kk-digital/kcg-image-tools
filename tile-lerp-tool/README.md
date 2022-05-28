@@ -5,6 +5,7 @@
 ## Tool Description
 
 Given paths of two images and an interpolation factor called `lerp`, the linear interpolation result of the both images is produced and written as `.png` image in the specified directory, and also an option to preview the result of interpolation between the both images for different `lerp` values ranges from `0` to `1` with a step depending on the specified `preview_grid_size`. 
+
 ## Installation
 All that's needed to start using TileLerp is to install the dependencies using the command
 ```
@@ -27,6 +28,7 @@ pip install -r src/to/dir/requirements.txt
 
 ## Example Usage
 
+### CLI Examples: 
 To get the linear interpolation of two results with factor of 0.7
 ```sh 
 python src/to/dir/tilelerp.py --first_image_path='./img1.png' --second_image_path='./img2.png' --lerp=0.7
@@ -35,10 +37,19 @@ python src/to/dir/tilelerp.py --first_image_path='./img1.png' --second_image_pat
 Then the tool will produce the interpolated image and writes it on the same current directory with the name `interpolated-img.png`. 
 
 
-To get the 
+To output the preview as well of interpolation results with different lerp values. 
 ```
-python src/to/dir/tilelerp.py --first_image_path='./img1.png' --second_image_path='./img2.png' --lerp=0.7
+python src/to/dir/tilelerp.py --first_image_path='./img1.png' --second_image_path='./img2.png' --lerp=0.7 --preview
 ```
 
 Also you may call `--help` to see the options and their defaults in the cli. 
 
+### Programmatic API
+To use the tool as a Python method you can simply call it in your program in the following way. 
+```python
+from tilelerp import TileLerp
+
+tilelerp = TileLerp()
+
+tilelerp.tile_lerp('./img1.png', './img2.png', lerp = 0.7)
+```
