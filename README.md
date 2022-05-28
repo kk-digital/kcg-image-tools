@@ -3,11 +3,12 @@
 Set of helping tools for cleaning image datasets and extracting patches from this set of images. 
 
 # Table of Contents
-There is currently 4 standalone tools in the project 
+There is currently 5 standalone tools in the project 
 - [ImagePatchExtractor](#ImagePatchExtractor)
 - [ImageDatasetCleaner](#ImageDatasetCleaner)
 - [ImageDatasetPreview](#ImageDatasetPreview)
 - [IntegerEncoder](#IntegerEncoder)
+- [TileLerp](#tilelerp)
 
 # ImagePatchExtractor
 A standalone tool for extracting patches from a set of images in a certain directory and output the output concatenation in `.png` format in another directory.
@@ -46,3 +47,11 @@ Supported methods are:
 
 
 For more info about the tool and usage instructions check this [link](int-encoder)
+
+
+# TileLerp
+A standalone tool for generating linear interpolation of two images given their paths, and preview for different interpolation factor.
+
+Given paths of two images and an interpolation factor called `lerp`, the linear interpolation result of the both images is produced and written as `.png` image in the specified directory, and also an option to preview the result of interpolation between the both images for different `lerp` values ranges from `0` to `1` with a step depending on the specified `preview_grid_size`. 
+
+For more info about the tool and usage instructions check this [link](tile-lerp-tool)
