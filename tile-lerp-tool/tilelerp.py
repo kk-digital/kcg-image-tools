@@ -59,7 +59,7 @@ class TileLerp:
         :returns:  The interpolated result of the two images. 
         :rtype: NDArray
         """
-        return np.clip((first_image + lerp * second_image) , 0 , 255).astype(np.uint8)
+        return np.clip((lerp * first_image + (1 - lerp) * second_image) , 0 , 255).astype(np.uint8)
         
     
     def __save_image(self, image: np.ndarray, save_path: str) -> None: 
