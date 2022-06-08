@@ -5,6 +5,10 @@ from PIL import Image
 import hashlib
 import fire 
 import json 
+from PIL import ImageFile
+
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class ImageDatasetCleaner: 
     
