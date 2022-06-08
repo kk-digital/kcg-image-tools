@@ -5,10 +5,6 @@ from PIL import Image
 import hashlib
 import fire 
 import json 
-from PIL import ImageFile
-
-
-ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class ImageDatasetCleaner: 
     
@@ -147,12 +143,16 @@ class ImageDatasetCleaner:
 
             
             if not errors: 
-                new_file_name = ImageDatasetCleaner.__base64urlsha256(im.tobytes())
-                shutil.copy2(image , os.path.join(output_directory , "{}.{}".format(new_file_name , im.format.lower())))
+                try: 
+                    new_file_name = ImageDatasetCleaner.__base64urlsha256(im.tobytes())
+                    shutil.copy2(image , os.path.join(output_directory , "{}.{}".format(new_file_name , im.format.lower())))
                 
-                print("image {} out of {} was valid, original file: {}  new file: {}"
-                                .format(counter , len(images_list) , file_name , new_file_name))
-            else:
+                    print("image {} out of {} was valid, original file: {}  new file: {}"
+                                    .format(counter , len(images_list) , file_name , new_file_name))
+                except Exception as ex: 
+                    errors.append("Image is corrupted")
+            
+            if errors:
                 failed_images[file_name] = {
                     'original_file_name': file_name, 
                     'errors': errors, 
