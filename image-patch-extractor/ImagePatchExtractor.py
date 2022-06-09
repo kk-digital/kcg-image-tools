@@ -218,7 +218,8 @@ class ImagePatchExtractor:
     ##############################################################################
     def extract_patches(
         self, source_directory: str, output_directory: str, min_image_size: tuple = (64, 64), allowed_types: list = [], 
-            split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512) , noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, batch_size: int = 8) -> None: 
+            split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512),
+            noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, batch_size: int = 8, write_single_patches: bool = True) -> None: 
         """Method to apply extracting patches given a set of options by the user.
         :param `source_directory`: The source directory containing the set of images to extract patches from them. 
         :type `source_directory`: str
@@ -244,6 +245,8 @@ class ImagePatchExtractor:
         :type `number_of_tiles`: int
         :param `batch_size`: Number of images to process at a time, default is `8`
         :type `batch_size`: int
+        :param `write_single_patches`: If True it write each patch as a single .png file otherwise it concatenates them as `output_png_size`. 
+        :type `write_single_patches`: bool
         :returns: None
         :rtype: None
         """
@@ -260,14 +263,14 @@ class ImagePatchExtractor:
             #open the image file and convert it into a numpy array. 
             image = np.asarray(Image.open(image).convert('RGB'))
             images.append(image)
-            if len(images) >= 1: 
+            if len(images) >= batch_size: 
                 #number of images has exceeded limit, should apply the extraction now
                 #check the type of patches split
                 cur_working_batch += 1
                 if split_patches_type == 'random':
                     #If it was not set by the user then take the splits of grid size. 
                     if number_of_tiles is None: 
-                        number_of_tiles = ((images[0].shape[0] * images[0].shape[1]) // (tile_size[0] * tile_size[1])) * 6 
+                        number_of_tiles = ((images[0].shape[0] * images[0].shape[1]) // (64 * 64)) * 6 
                     
                     patches = self.__random_split_batch(images , tile_size, number_of_tiles)
                     patches = [patch for value in patches for patch in value]
@@ -289,20 +292,25 @@ class ImagePatchExtractor:
                 if flip_patches: 
                     patches = self.__horizontal_flip_batch(patches)
                 
-                no_of_elements = (output_png_size[0] // tile_size[0]) * (output_png_size[1] // tile_size[1])
+                if write_single_patches:
+                    for patch in patches: 
+                         self.__write_array_to_png(patch, output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
+                else: 
+                    no_of_elements = (output_png_size[0] // tile_size[0]) * (output_png_size[1] // tile_size[1])
+                    
+                    for i in range(len(patches) // no_of_elements): 
+                        concatendated = self.__concatenate_patches(patches[i * no_of_elements: (i + 1) * no_of_elements] , tile_size , output_png_size)
+                        self.__write_array_to_png(concatendated , output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
+                    
+                    #remaining patches that didn't fit in the output_png size 
+                    if len(patches) % no_of_elements != 0: 
+                        offset = len(patches) // no_of_elements
+                        number_of_values = len(patches[offset * no_of_elements:])
+                        concatendated = self.__concatenate_patches(patches[offset * no_of_elements:] , tile_size , (tile_size[0] * number_of_values , tile_size[1]))
+                        self.__write_array_to_png(concatendated , output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
                 
-                for i in range(len(patches) // no_of_elements): 
-                    concatendated = self.__concatenate_patches(patches[i * no_of_elements: (i + 1) * no_of_elements] , tile_size , output_png_size)
-                    self.__write_array_to_png(concatendated , output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
-                
+                #Frees up the image list
                 images = [] 
-                #remaining patches that didn't fit in the output_png size 
-                if len(patches) % no_of_elements != 0: 
-                    offset = len(patches) // no_of_elements
-                    number_of_values = len(patches[offset * no_of_elements:])
-                    concatendated = self.__concatenate_patches(patches[offset * no_of_elements:] , tile_size , (tile_size[0] * number_of_values , tile_size[1]))
-                    self.__write_array_to_png(concatendated , output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
-                
                 print("Finished {} batches out of {} total batches.".format(cur_working_batch , len(valid_images_list) // batch_size))
         return 
     
@@ -347,7 +355,7 @@ if __name__ == "__main__":
     
     instance = ImagePatchExtractor() 
     
-    instance.extract_patches('./data/PixelJoint/database/cleaned-files-png-jpeg-only', './PixelJoint_32x32_random_patches')
+    instance.extract_patches('./data/PixelJoint/database/cleaned-files-png-jpeg-only', './PixelJoint_32x32_random_patches', batch_size = 8)
     # instance = ImagePatchExtractor() 
     # start = time.time()
     # instance._resize_image_folder('./data/PixelJoint/database/cleaned-files-png-jpeg-only' , './PixelJoint_jpeg_png_only_16x16' , (16,16))
