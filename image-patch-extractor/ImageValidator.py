@@ -34,11 +34,13 @@ class ImageValidator:
         """
         return True if len(allowed_types) == 0 else (os.path.splitext(file)[1] in allowed_types)
 
-    def validate(self, directory: str , recursive: bool = False , allowed_types = []) -> Tuple[list,list]:
+    def validate(self, directory: str , min_size: tuple = (64, 64), recursive: bool = False , allowed_types = []) -> Tuple[list,list]:
         #FixME -> Add the steps of validation to be clear for the user. 
         """Validates all images contained in the path given with all it's subdirectories as well if recursive is true
         :param directory: The directory containing the files to be validated 
         :type directory: str
+        :param min_size: min size of image dimension to be considered as valid image, comparison is made with on each dimension.  
+        :type min_size: tuple
         :param recursive: If it's set to True the function will search and validate all images in 
                 the given directory and all its subdirectories
         :type recursive: bool
@@ -67,7 +69,12 @@ class ImageValidator:
                 #try to open the image if it was corrupted it will return an exception 
                 im = Image.open(image)
                 _ , image_extension = os.path.splitext(image)
-
+                
+                #Check that the image is larger than min_size.
+                if im.size[0] < min_size[0] or im.size[1] < min_size[1]: 
+                    failed_validation.add(image)
+                    continue 
+                
                 #check if the file extension matches the image format an exception is applied for jpeg and jpg files as they are the same
                 if im.format is None or im.format.lower() != image_extension.lower()[1:]: 
                     if image_extension.lower()[1:] == 'jpg' and im.format.lower() == 'jpeg': 

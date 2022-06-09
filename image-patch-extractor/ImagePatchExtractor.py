@@ -193,14 +193,39 @@ class ImagePatchExtractor:
         return [self.__resize(image , dsize) for image in images]
     
     
+    #############TEMP Function for resizing ###################################### 
+    
+    def _resize_image_folder(self, source_directory: str, output_directory: str, resize_to: tuple):
+        #Validate the image in the source directory and get the valid image paths list. 
+        validator = ImageValidator()
+        valid_images_list , _ = validator.validate(source_directory, False , [])
+        
+        os.makedirs(output_directory , exist_ok = True)
+        corrupts = 0 
+        for image_file in valid_images_list: 
+            #open the image file and convert it into a numpy array. 
+            try: 
+                image = np.asarray(Image.open(image_file).convert('RGB'))
+                image = self.__resize(image, resize_to)
+                _ , file_name = os.path.split(os.path.splitext(image_file)[0])
+                Image.fromarray(image.astype(np.uint8)).save(os.path.join(output_directory , "{}.png".format(file_name))) 
+            except Exception: 
+                corrupts += 1 
+                print(corrupts)
+                continue 
+
+        return  
+    ##############################################################################
     def extract_patches(
-        self, source_directory: str, output_directory: str, allowed_types: list = [], 
+        self, source_directory: str, output_directory: str, min_image_size: tuple = (64, 64), allowed_types: list = [], 
             split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512) , noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, batch_size: int = 8) -> None: 
         """Method to apply extracting patches given a set of options by the user.
         :param `source_directory`: The source directory containing the set of images to extract patches from them. 
         :type `source_directory`: str
         :param `output_directory`: The output directory to save the `PNG` images of concatenated patches. 
         :type `output_directory`: str
+        :param `min_image_size`: min size of image dimension to be considered as valid image, comparison is made with on each dimension.  
+        :type `min_image_size`: tuple
         :param `allowed_types`: a list of allowed images formats (Image codecs) to be considered within the dataset it accepts all 
                 types when left as an empty list, default is `[]`
         :type `allowed_types`: list
@@ -225,7 +250,7 @@ class ImagePatchExtractor:
 
         #Validate the image in the source directory and get the valid image paths list. 
         validator = ImageValidator()
-        valid_images_list , _ = validator.validate(source_directory, False , allowed_types)
+        valid_images_list , _ = validator.validate(source_directory, min_image_size ,  False , allowed_types)
         
         os.makedirs(output_directory , exist_ok = True)
         images = [] 
@@ -319,3 +344,19 @@ def extract_patches_cli_tool(source_directory: str, output_directory: str, allow
 if __name__ == "__main__": 
 
     fire.Fire(extract_patches_cli_tool)
+    
+    # instance = ImagePatchExtractor() 
+    # start = time.time()
+    # instance._resize_image_folder('./data/PixelJoint/database/cleaned-files-png-jpeg-only' , './PixelJoint_jpeg_png_only_16x16' , (16,16))
+    
+    # print(time.time() - start)    
+
+    # start = time.time()
+    # instance._resize_image_folder('./data/PixelJoint/database/cleaned-files-png-jpeg-only' , './PixelJoint_jpeg_png_only_32x32' , (32,32))
+    
+    # print(time.time() - start)    
+    
+    # start = time.time()
+    # instance._resize_image_folder('./data/PixelJoint/database/cleaned-files-png-jpeg-only' , './PixelJoint_jpeg_png_only_64x64' , (64,64))
+    
+    # print(time.time() - start)
