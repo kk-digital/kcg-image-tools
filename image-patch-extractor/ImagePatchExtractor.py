@@ -267,7 +267,7 @@ class ImagePatchExtractor:
                 if split_patches_type == 'random':
                     #If it was not set by the user then take the splits of grid size. 
                     if number_of_tiles is None: 
-                        number_of_tiles = (images[0].shape[0] * images[0].shape[1]) // (tile_size[0] * tile_size[1])
+                        number_of_tiles = ((images[0].shape[0] * images[0].shape[1]) // (tile_size[0] * tile_size[1])) * 6 
                     
                     patches = self.__random_split_batch(images , tile_size, number_of_tiles)
                     patches = [patch for value in patches for patch in value]
@@ -343,8 +343,11 @@ def extract_patches_cli_tool(source_directory: str, output_directory: str, allow
     print("Process took {:.2f} seconds to finish your task".format(time.time() - start_time))
 if __name__ == "__main__": 
 
-    fire.Fire(extract_patches_cli_tool)
+    # fire.Fire(extract_patches_cli_tool)
     
+    instance = ImagePatchExtractor() 
+    
+    instance.extract_patches('./data/PixelJoint/database/cleaned-files-png-jpeg-only', './PixelJoint_32x32_random_patches')
     # instance = ImagePatchExtractor() 
     # start = time.time()
     # instance._resize_image_folder('./data/PixelJoint/database/cleaned-files-png-jpeg-only' , './PixelJoint_jpeg_png_only_16x16' , (16,16))
