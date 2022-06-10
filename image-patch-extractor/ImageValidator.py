@@ -2,6 +2,7 @@ import os
 import re
 from typing import Tuple
 from PIL import Image
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class ImageValidator: 
     #FixME base64 is not the same as base64url change the regex to detect the file names. 
@@ -34,7 +35,30 @@ class ImageValidator:
         """
         return True if len(allowed_types) == 0 else (os.path.splitext(file)[1] in allowed_types)
 
-    def validate(self, directory: str , min_size: tuple = (64, 64), recursive: bool = False , allowed_types = []) -> Tuple[list,list]:
+    def __validate_task(self, image: str,  min_size: tuple = (64, 64), allowed_types: list = []):
+        
+        try: 
+            #try to open the image if it was corrupted it will return an exception 
+            im = Image.open(image)
+            _ , image_extension = os.path.splitext(image)
+            
+            #Check that the image is larger than min_size.
+            if im.size[0] < min_size[0] or im.size[1] < min_size[1]: 
+                return False, image 
+            
+            #check if the file extension matches the image format an exception is applied for jpeg and jpg files as they are the same
+            if im.format is None or im.format.lower() != image_extension.lower()[1:]: 
+                if not (image_extension.lower()[1:] == 'jpg' and im.format.lower() == 'jpeg'): 
+                    #image is invalid because its extension doesn't match its format 
+                    return False, image
+    
+            im.verify()
+            return True, image
+        except Exception: 
+            #File is invalid because it's corrupted 
+            return False, image 
+     
+    def validate(self, directory: str , min_size: tuple = (64, 64), recursive: bool = False , allowed_types = [], num_workers: int = 8) -> Tuple[list,list]:
         #FixME -> Add the steps of validation to be clear for the user. 
         """Validates all images contained in the path given with all it's subdirectories as well if recursive is true
         :param directory: The directory containing the files to be validated 
@@ -46,6 +70,8 @@ class ImageValidator:
         :type recursive: bool
         :param allowed_types: list of the allowed images extensions if it's empty then all image types will be considered 
         :type allowed_types: list
+        :param num_workers: Number of threads to process the files.
+        :type num_workers: int
         :returns: A tuple of two lists the first are the valid image paths and the other is for the invalid ones.
         :rtype: list[str]
         """
@@ -64,29 +90,21 @@ class ImageValidator:
         regular_exp = re.compile(r'^[a-zA-Z0-9+/=]*$')
         [failed_validation.add(image) for image in images_list if regular_exp.fullmatch(os.path.splitext(os.path.split(image)[-1])[0]) is None]
         
+        thread_pool = ThreadPoolExecutor(max_workers = num_workers)
+        
+        futures = [] 
+        
         for image in images_list: 
+            
+            task = thread_pool.submit(self.__validate_task , image, min_size, allowed_types,)
+            futures.append(task)
+        
+        for future in as_completed(futures): 
             try: 
-                #try to open the image if it was corrupted it will return an exception 
-                im = Image.open(image)
-                _ , image_extension = os.path.splitext(image)
-                
-                #Check that the image is larger than min_size.
-                if im.size[0] < min_size[0] or im.size[1] < min_size[1]: 
-                    failed_validation.add(image)
-                    continue 
-                
-                #check if the file extension matches the image format an exception is applied for jpeg and jpg files as they are the same
-                if im.format is None or im.format.lower() != image_extension.lower()[1:]: 
-                    if image_extension.lower()[1:] == 'jpg' and im.format.lower() == 'jpeg': 
-                        continue
-                    #image is invalid because its extension doesn't match its format 
-                    failed_validation.add(image)
-                    
-                im.verify()
-                valid_images.add(image)
+                status, file_name = future.result()
+                valid_images.add(file_name) if status else failed_validation.add(image)
             except Exception: 
-                #File is invalid because it's corrupted 
-                failed_validation.add(image)
+                continue
             
             
         return (list(valid_images), list(failed_validation))
