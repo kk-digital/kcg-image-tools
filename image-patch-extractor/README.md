@@ -17,6 +17,8 @@ pip install -r src/to/dir/requirements.txt
 * `source_directory` _[string]_ - _[required]_ - The source directory of the dataset containing the images. 
 * `output_directory` _[string]_ - _[required]_ - The output directory to write the extracted patches. 
 
+* `min_image_size` _[tuple]_ - _[optional]_ - min size of image dimension to be considered as valid image, comparison is made with on each dimension. `i.e. (min_dim[0] >= image_dim[0] and min_dim[1] >= image_dim[1])`.
+
 * `allowed_formats` _[list[str]]_ - _[optional]_ A list of strings of the allowed formats (codecs) to be marked as valid for the output dataset any format is allowed when the list is left empty, default is `[]`
 
 * `tile_size` _[tuple(int,int)]_ - _[optional]_ The desired patch size, default is `(32,32)`
@@ -32,6 +34,10 @@ pip install -r src/to/dir/requirements.txt
 * `number_of_tiles` _[int]_ - _[optional]_ Number of tiles to be extracted if the `split_patches_type` param was set to `random`,
                 if it was not set then the tool will set it to the number of grid splits in the image with size of `tile_size`
 * `batch_size` _[int]_ - _[optional]_ Number of images to process at a time.
+
+* `num_workers` _[int]_ - _[optional]_ Number of workers (Threads) to be used for executing the process, default is `8`
+
+* `write_single_patches` _[bool]_ - _[optional]_ If True it write each patch as a single `.png` file otherwise it concatenates them as grid of size `output_png_size`, default is `True`.
 
 ## Example Usage
 
@@ -60,7 +66,3 @@ python src/to/dir/ImagePatchExtractor.py source_directory = './my-dataset' outpu
 
 Also you may call `--help` to see the options and their defaults in the cli. 
 
-
-## TODO 
-* Option to specify "border" of N pixels, where patches will not be taken if they are within border region
-* Must be designed to use worker processes and up to N cores, with each worker process, processing one file.
