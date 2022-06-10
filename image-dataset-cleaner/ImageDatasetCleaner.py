@@ -7,6 +7,8 @@ import fire
 import json 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from Base36lib import Base36
+
 class ImageDatasetCleaner: 
     
     def __init__(self) -> None:
@@ -68,7 +70,7 @@ class ImageDatasetCleaner:
         return ImageDatasetCleaner.__base64urlsha256(bytes(hashlib.sha256(object).hexdigest(), 'ascii') , depth - 1)
     
     def __validate_image_task(self, image: str, output_directory: str, allowed_formats = ['PNG' , 'JPEG'],
-                              min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024)): 
+                              min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024), base36: int = None): 
         """ Given an image path read it and make the validation steps specified in the cleaner, then return the info 
                         
         :param image: The path for the image to be validated.
@@ -81,6 +83,8 @@ class ImageDatasetCleaner:
         :type min_size: tuple
         :param max_size: max target image size (if the image is larger than it then it's ignored and not copied). 
         :type max_size: tuple
+        :param base36: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :type base36: int
         :returns: The original image file name, the new image file name,   `image_info` and `failed_image` and errors and list.  
         :rtype: (str, str, dict, dict, list)
         """
@@ -136,9 +140,14 @@ class ImageDatasetCleaner:
         if not errors: 
             try: 
                 new_file_name = ImageDatasetCleaner.__base64urlsha256(im.tobytes())
+                #check if base36 was chosen as the naming convention for the files
+                if base36 is not None: 
+                    new_file_name = Base36.encode(new_file_name)[:min(len(new_file_name), base36)]
+                
                 shutil.copy2(image , os.path.join(output_directory , "{}.{}".format(new_file_name , im.format.lower())))
             
             except Exception as ex: 
+                print(ex)
                 errors.append("Image is corrupted")
         
         if errors:
@@ -151,7 +160,7 @@ class ImageDatasetCleaner:
         return file_name, new_file_name, image_info, failed_image, errors
 
     def process_images(self, source_directory: str , output_directory: str, allowed_formats = ['PNG' , 'JPEG'],
-                                min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024), num_workers: int = 8) -> None: 
+                                min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024), base36: int = None, num_workers: int = 8) -> None: 
         #FixME -> Add steps of the processing to be more clear to the user. 
         """ Given a source directory containing images, it applies some conditions and copies 
                         the valid images into the `output_directory` 
@@ -166,6 +175,8 @@ class ImageDatasetCleaner:
         :type min_size: tuple
         :param max_size: max target image size (if the image is larger than it then it's ignored and not copied). 
         :type max_size: tuple
+        :param base36: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :type base36: int
         :param num_workers: number of workers (threads) to be used in the process, default value is `8`. 
         :type num_workers: int
         :returns: None
@@ -188,7 +199,7 @@ class ImageDatasetCleaner:
         for image in images_list: 
             #errors (conditions that weren't met at this image)
             
-            task = thread_pool.submit(self.__validate_image_task, image, output_directory, allowed_formats, min_size, max_size,)
+            task = thread_pool.submit(self.__validate_image_task, image, output_directory, allowed_formats, min_size, max_size,base36,)
             futures.append(task)
         
         #loop over threads and fetch data from completed threads.
@@ -216,7 +227,7 @@ class ImageDatasetCleaner:
 
 
 def image_dataset_cleaner_cli(source_directory: str , output_directory: str, allowed_formats = ['PNG' , 'JPEG'],
-                                min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024), num_workers: int = 8) -> None: 
+                                min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024), base36: int = None, num_workers: int = 8) -> None: 
         """ Given a source directory containing images, it applies some conditions and copies 
                         the valid images into the `output_directory` and two json files of the status of processed images 
                         saved in the same output directory with names `failed-images.json` and `images-info.json`
@@ -236,13 +247,15 @@ def image_dataset_cleaner_cli(source_directory: str , output_directory: str, all
         :type min_size: tuple
         :param max_size: max target image size (if the image is larger than it then it's ignored and not copied). 
         :type max_size: tuple
+        :param base36: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :type base36: int
         :param num_workers: number of workers (threads) to be used in the process, default value is `8`. 
         :type num_workers: int
         :returns: None
         :rtype: None
         """
         dataset_cleaner = ImageDatasetCleaner()
-        dataset_cleaner.process_images(source_directory , output_directory , allowed_formats , min_size , max_size , num_workers)
+        dataset_cleaner.process_images(source_directory , output_directory , allowed_formats , min_size , max_size ,base36, num_workers)
 
 if __name__ == "__main__": 
         
