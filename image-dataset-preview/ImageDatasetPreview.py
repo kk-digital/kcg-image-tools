@@ -1,13 +1,12 @@
-import enum
 import os
 from random import shuffle
 import random
-import string 
+import string
+import time 
 from PIL import Image 
-import numpy as np 
 import fire 
 import warnings
-
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class ImageDatasetPreview: 
     def __init__(self): 
@@ -32,8 +31,45 @@ class ImageDatasetPreview:
 
         return 'L' if color_mode.lower() == 'grey' else 'RGB'
     
+    def __write_images_to_grid(self, output_directory: str, images: list[str], PIL_color_mode: str,
+                               image_size: tuple[int, int] = (64 , 64),matrix_size: tuple[int, int] = (32 , 32)) -> None: 
+        """ Given a list of images paths, the method scale them down and concatenates them into large image 
+            matrix with a given size and writes the matrix/grid image into `output_directory` as `.png`. 
+                        
+        :param output_directory: The directory to store the preview images inside it. 
+        :type output_directory: str
+        :param images: The images list to be concatenated and written into grid image. 
+        :type images: list[str]
+        :param PIL_color_mode: the color mode of images whatever they are to be read in RGB or grayscale. 
+        :type PIL_color_mode: str
+        :param image_size: The size to scale down the images to before being added to the preview matrix image. 
+        :type image_size: tuple[int,int]
+        :param matrix_size: The size of the preview matrix image (number of images to be included as width and height of the matrix)
+        :type matrix_size: tuple[int,int]
+        :returns: None
+        :rtype: None
+        """
+        
+        #make a new blank matrix image to be used for adding the small patches. 
+        matrix_img = Image.new(PIL_color_mode , (matrix_size[0] * image_size[0] , matrix_size[1] * image_size[1]))
+        count = 0 
+        for image in images: 
+            #open the image and convert it to the selected color mode. 
+            try: 
+                img = Image.open(image).convert(PIL_color_mode)
+            except Exception: 
+                continue
+            img = img.resize(image_size)
+            #paste the resized image in the large matrix image with offset based on the number of the current image. 
+            matrix_img.paste(img , box = ((count % matrix_size[0]) * image_size[0] , (count // matrix_size[1]) * image_size[1]) )
+            count += 1 
+        
+        #save the image file in the output directory. 
+        matrix_img.save(os.path.join(output_directory, ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))) + '.png')
+
+        
     def preview_image_dataset(self, source_directory: str, output_directory: str,  image_size: tuple[int, int] = (64 , 64), 
-                                matrix_size: tuple[int, int] = (32 , 32), color_mode: str = 'rgb' , images_order_mode: str = 'sorted') -> None: 
+                                matrix_size: tuple[int, int] = (32 , 32), color_mode: str = 'rgb' , images_order_mode: str = 'sorted', num_workers: int = 8) -> None: 
         """ Given a source directory containing images,the tool reads this images scale them down and concatenates them into large image 
                 matrix with a given size for preview.
                         
@@ -49,6 +85,8 @@ class ImageDatasetPreview:
         :type color_mode: str
         :param images_order_mode: The order of images of preview to be random (shuffled) or sorted based on the image file name, options are `random` or `sorted` default is `sorted`
         :type images_order_mode: str
+        :param num_workers: Number of threads to be used in executing the process, default is `8` 
+        :type num_workers: int
         :returns: None
         :rtype: None
         """
@@ -68,32 +106,30 @@ class ImageDatasetPreview:
         else: 
             shuffle(images)
         
+        #Defining the thread pool with max number of workers given. 
+        thread_pool = ThreadPoolExecutor(max_workers = num_workers)
+        futures = [] 
+        
         #take images as batches and the batch size is the number of images in one `preview matrix image`
         for batch in range(0 , ((len(images) + batch_size - 1) // batch_size)): 
             #take the batch of images files.
             imgs = images[batch * batch_size: min((batch + 1) * batch_size , len(images))]
-            #make a new blank matrix image to be used for adding the small patches. 
-            matrix_img = Image.new(PIL_color_mode , (matrix_size[0] * image_size[0] , matrix_size[1] * image_size[1]))
-            count = 0 
-            for image in imgs: 
-                #open the image and convert it to the selected color mode. 
-                try: 
-                    img = Image.open(image).convert(PIL_color_mode)
-                except Exception: 
-                    continue
-                img = img.resize(image_size)
-                #paste the resized image in the large matrix image with offset based on the number of the current image. 
-                matrix_img.paste(img , box = ((count % matrix_size[0]) * image_size[0] , (count // matrix_size[1]) * image_size[1]) )
-                count += 1 
             
-            #save the image file in the output directory. 
-            matrix_img.save(os.path.join(output_directory, ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))) + '.png')
-            print("finished batch {} out of {} batches".format(batch + 1, ((len(images) + batch_size - 1) // batch_size)))
+            task = thread_pool.submit(self.__write_images_to_grid, output_directory, imgs, PIL_color_mode, image_size, matrix_size,)
+            
+            futures.append(task)
+        
+        #wait for all tasks to be executed. 
+        completed_batches = 0
+        for future in as_completed(futures): 
+            completed_batches += 1 
+            print("finished batch {} out of {} batches".format(completed_batches, ((len(images) + batch_size - 1) // batch_size)))
+            
         return 
     
     
 def image_dataset_preview_cli(source_directory: str, output_directory: str,  image_size: tuple = (64 , 64), 
-                                        matrix_size: tuple = (32 , 32), color_mode: str = 'rgb' , images_order_mode: str = 'sorted') -> None: 
+                                        matrix_size: tuple = (32 , 32), color_mode: str = 'rgb' , images_order_mode: str = 'sorted', num_workers: int = 8) -> None: 
     """ Given a source directory containing images,the tool reads this images scale them down and concatenates them into large image 
             matrix with a given size for preview.
                     
@@ -109,13 +145,18 @@ def image_dataset_preview_cli(source_directory: str, output_directory: str,  ima
         :type color_mode: str
         :param images_order_mode: The order of images of preview to be random (shuffled) or sorted based on the image file name, options are `random` or `sorted` default is `sorted`
         :type images_order_mode: str
+        :param num_workers: Number of threads to be used in executing the process, default is `8` 
+        :type num_workers: int
         :returns: None
         :rtype: None
     """
+    
+    start = time.time() 
     preview_dataset = ImageDatasetPreview()
     
-    preview_dataset.preview_image_dataset(source_directory , output_directory, image_size, matrix_size, color_mode, images_order_mode)
+    preview_dataset.preview_image_dataset(source_directory , output_directory, image_size, matrix_size, color_mode, images_order_mode, num_workers)
 
+    print("Process took {} seconds to execute".format(time.time() - start))
 if __name__ == "__main__":     
     warnings.filterwarnings("ignore")
 
