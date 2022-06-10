@@ -22,11 +22,12 @@ pip install -r src/to/dir/requirements.txt
 
 * `color_mode` _[str]_ - _[optional]_ -  the color mode of images to be `grey` or `rgb`, default is `rgb` 
 * `images_order_mode` _[str]_ - _[optional]_ - The order of images of preview to be random (shuffled) or sorted based on the image file name, options are `random` or `sorted` default is `sorted`
+* `num_workers` _[int]_ - _[optional]_ - Number of threads to be used in executing the process, default is `8` 
 
 ## Example Usage
 
 ```
-python src/to/dir/ImageDatasetCleaner.py --source_directory='./my-dataset' output_directory='./preview-images'
+python src/to/dir/ImageDatasetPreview.py --source_directory='./my-dataset' output_directory='./preview-images'
 ```
 
 > Note that if the `output directory` is not created the tool automatically creates it for you. 
