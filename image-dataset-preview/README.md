@@ -22,6 +22,9 @@ pip install -r src/to/dir/requirements.txt
 
 * `color_mode` _[str]_ - _[optional]_ -  the color mode of images to be `grey` or `rgb`, default is `rgb` 
 * `images_order_mode` _[str]_ - _[optional]_ - The order of images of preview to be random (shuffled) or sorted based on the image file name, options are `random` or `sorted` default is `sorted`
+
+* `base36` _[int]_ - _[optional]_ - Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied, Please be careful when using this as it may result in duplication, so choose a large value to avoid collision, (choose values larger than 25)
+
 * `num_workers` _[int]_ - _[optional]_ - Number of threads to be used in executing the process, default is `8` 
 
 ## Example Usage
