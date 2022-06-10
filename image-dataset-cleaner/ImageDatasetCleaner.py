@@ -5,6 +5,7 @@ from PIL import Image
 import hashlib
 import fire 
 import json 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class ImageDatasetCleaner: 
     
@@ -66,8 +67,91 @@ class ImageDatasetCleaner:
     
         return ImageDatasetCleaner.__base64urlsha256(bytes(hashlib.sha256(object).hexdigest(), 'ascii') , depth - 1)
     
+    def __validate_image_task(self, image: str, output_directory: str, allowed_formats = ['PNG' , 'JPEG'],
+                              min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024)): 
+        """ Given an image path read it and make the validation steps specified in the cleaner, then return the info 
+                        
+        :param image: The path for the image to be validated.
+        :type image: str
+        :param output_directory: The directory to copy the images into it. 
+        :type output_directory: str
+        :param allowed_formats: list of the allowed image formats to be considered in the copied folder 
+        :type allowed_formats: list
+        :param min_size: min target image size (if the image is less than it then it's ignored and not copied). 
+        :type min_size: tuple
+        :param max_size: max target image size (if the image is larger than it then it's ignored and not copied). 
+        :type max_size: tuple
+        :returns: The original image file name, the new image file name,   `image_info` and `failed_image` and errors and list.  
+        :rtype: (str, str, dict, dict, list)
+        """
+
+        errors = [] 
+        image_info = {} 
+        failed_image = {} 
+        
+        #try to open the image and check if not corrupted 
+        try: 
+            #try to lazy loading for the image and verify it's not corrupted. 
+            im = Image.open(image)
+            #checks is the image format is PNG or JPEG as specified. 
+            if im.format not in allowed_formats: 
+                errors.append('Image format is not PNG nor JPEG it\'s {}'.format(im.format))
+            
+            #checks if the image size is smaller than the target size 
+            if im.size < min_size: 
+                errors.append('The image is smaller than the target size, image size is {}'.format(im.size))
+            elif im.size > max_size: 
+                errors.append('The image is larger than the target size, image size is {}'.format(im.size))
+            #verifies that the image is not corrupted 
+            im.verify()
+        except Exception:
+            errors.append("Image is corrupted")
+        
+        _ , file_name = os.path.split(image)
+
+        try: 
+            im = Image.open(image)
+                            
+            image_info = {
+                'format': im.format.lower(), 
+                'original_file_name': file_name, 
+                'file_size': os.stat(image).st_size, 
+                'image_size': "({},{})".format(im.size[0] , im.size[1]), 
+                'sha256': hashlib.sha256(im.tobytes()).hexdigest(), 
+                'base64sha256': ImageDatasetCleaner.__base64urlsha256(im.tobytes() , depth = 1),
+            }
+            
+        except Exception: 
+            image_info = {
+                'format': 'unk', 
+                'original_file_name': file_name, 
+                'file_size': os.stat(image).st_size, 
+                'image_size': 'unk', 
+                'sha256': 'unk', 
+                'base64urlsha256': 'unk', 
+            }
+
+        #init the variable to make sure it return something if there is errors with the image
+        new_file_name = '' 
+        if not errors: 
+            try: 
+                new_file_name = ImageDatasetCleaner.__base64urlsha256(im.tobytes())
+                shutil.copy2(image , os.path.join(output_directory , "{}.{}".format(new_file_name , im.format.lower())))
+            
+            except Exception as ex: 
+                errors.append("Image is corrupted")
+        
+        if errors:
+            failed_image = {
+                'original_file_name': file_name, 
+                'errors': errors, 
+            }
+            
+
+        return file_name, new_file_name, image_info, failed_image, errors
+
     def process_images(self, source_directory: str , output_directory: str, allowed_formats = ['PNG' , 'JPEG'],
-                                min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024)) -> None: 
+                                min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024), num_workers: int = 8) -> None: 
         #FixME -> Add steps of the processing to be more clear to the user. 
         """ Given a source directory containing images, it applies some conditions and copies 
                         the valid images into the `output_directory` 
@@ -82,6 +166,8 @@ class ImageDatasetCleaner:
         :type min_size: tuple
         :param max_size: max target image size (if the image is larger than it then it's ignored and not copied). 
         :type max_size: tuple
+        :param num_workers: number of workers (threads) to be used in the process, default value is `8`. 
+        :type num_workers: int
         :returns: None
         :rtype: None
         """
@@ -94,75 +180,33 @@ class ImageDatasetCleaner:
         images_info = {} 
         failed_images = {} 
         counter = 0 
+        
+        #Define the thread pool. 
+        thread_pool = ThreadPoolExecutor(max_workers = num_workers)
+        futures = [] 
         #Loops over the whole image list in the source directory 
         for image in images_list: 
             #errors (conditions that weren't met at this image)
-            errors = [] 
+            
+            task = thread_pool.submit(self.__validate_image_task, image, output_directory, allowed_formats, min_size, max_size,)
+            futures.append(task)
+        
+        #loop over threads and fetch data from completed threads.
+        for task in as_completed(futures): 
+            
             counter += 1 
-            #try to open the image and check if not corrupted 
-            try: 
-                #try to lazy loading for the image and verify it's not corrupted. 
-                im = Image.open(image)
-                #checks is the image format is PNG or JPEG as specified. 
-                if im.format not in allowed_formats: 
-                    errors.append('Image format is not PNG nor JPEG it\'s {}'.format(im.format))
-                
-                #checks if the image size is smaller than the target size 
-                if im.size < min_size: 
-                    errors.append('The image is smaller than the target size, image size is {}'.format(im.size))
-                elif im.size > max_size: 
-                    errors.append('The image is larger than the target size, image size is {}'.format(im.size))
-                #verifies that the image is not corrupted 
-                im.verify()
-            except Exception:
-                errors.append("Image is corrupted")
+            file_name, new_file_name, image_info, failed_image, errors = task.result() 
             
-            _ , file_name = os.path.split(image)
-
-            try: 
-                im = Image.open(image)
-                                
-                images_info[file_name] = {
-                    'format': im.format.lower(), 
-                    'original_file_name': file_name, 
-                    'file_size': os.stat(image).st_size, 
-                    'image_size': "({},{})".format(im.size[0] , im.size[1]), 
-                    'sha256': hashlib.sha256(im.tobytes()).hexdigest(), 
-                    'base64sha256': ImageDatasetCleaner.__base64urlsha256(im.tobytes() , depth = 1),
-                }
-                
-            except Exception: 
-                images_info[file_name] = {
-                    'format': 'unk', 
-                    'original_file_name': file_name, 
-                    'file_size': os.stat(image).st_size, 
-                    'image_size': 'unk', 
-                    'sha256': 'unk', 
-                    'base64urlsha256': 'unk', 
-                }
-
+            images_info[file_name] = image_info
             
-            if not errors: 
-                try: 
-                    new_file_name = ImageDatasetCleaner.__base64urlsha256(im.tobytes())
-                    shutil.copy2(image , os.path.join(output_directory , "{}.{}".format(new_file_name , im.format.lower())))
-                
-                    print("image {} out of {} was valid, original file: {}  new file: {}"
-                                    .format(counter , len(images_list) , file_name , new_file_name))
-                except Exception as ex: 
-                    errors.append("Image is corrupted")
-            
-            if errors:
-                failed_images[file_name] = {
-                    'original_file_name': file_name, 
-                    'errors': errors, 
-                }
-                
+            if errors: 
+                failed_images[file_name] = failed_image
                 print("image {} out of {} was NOT valid because of those errors: {} , original file: {}"
                         .format(counter , len(images_list) , errors , file_name))
+            else: 
+                print("image {} out of {} was valid, original file: {}  new file: {}"
+                    .format(counter , len(images_list) , file_name , new_file_name))
 
-            
-            
         #Write the json files into the same output directory 
         ImageDatasetCleaner.__write_dict_to_json(failed_images , output_directory , 'failed-images.json')
         ImageDatasetCleaner.__write_dict_to_json(images_info , output_directory , 'images-info.json')
@@ -172,7 +216,7 @@ class ImageDatasetCleaner:
 
 
 def image_dataset_cleaner_cli(source_directory: str , output_directory: str, allowed_formats = ['PNG' , 'JPEG'],
-                                min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024)) -> None: 
+                                min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024), num_workers: int = 8) -> None: 
         """ Given a source directory containing images, it applies some conditions and copies 
                         the valid images into the `output_directory` and two json files of the status of processed images 
                         saved in the same output directory with names `failed-images.json` and `images-info.json`
@@ -192,18 +236,15 @@ def image_dataset_cleaner_cli(source_directory: str , output_directory: str, all
         :type min_size: tuple
         :param max_size: max target image size (if the image is larger than it then it's ignored and not copied). 
         :type max_size: tuple
+        :param num_workers: number of workers (threads) to be used in the process, default value is `8`. 
+        :type num_workers: int
         :returns: None
         :rtype: None
         """
         dataset_cleaner = ImageDatasetCleaner()
-        
-        dataset_cleaner.process_images(source_directory , output_directory , allowed_formats , min_size , max_size)
+        dataset_cleaner.process_images(source_directory , output_directory , allowed_formats , min_size , max_size , num_workers)
 
 if __name__ == "__main__": 
-    
-    #for pyinstaller 
-    # command = input()
-    # fire.Fire(image_dataset_cleaner_cli , command)
-    
+        
     fire.Fire(image_dataset_cleaner_cli)
     
