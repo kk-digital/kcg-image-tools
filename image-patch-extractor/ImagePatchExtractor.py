@@ -8,6 +8,7 @@ import os
 import string
 from ImageValidator import ImageValidator
 import fire 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class ImagePatchExtractor: 
     
@@ -214,12 +215,67 @@ class ImagePatchExtractor:
                 print(corrupts)
                 continue 
 
-        return  
+        return 
     ##############################################################################
-    def extract_patches(
-        self, source_directory: str, output_directory: str, min_image_size: tuple = (64, 64), allowed_types: list = [], 
+    
+    def _extract_patches_task(self, output_directory: str, image_files: list[str], split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512),
+            noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, write_single_patches: bool = True): 
+        """Method to apply patch extraction in for a batch of images, used to be executed as a task inside a thread. 
+        """
+        images = [] 
+        patches = [] 
+
+        for image_file in image_files: 
+
+            image = np.asarray(Image.open(image_file).convert('RGB'))
+            images.append(image)
+
+        if split_patches_type == 'random':
+            #If it was not set by the user then take the splits of grid size. 
+            if number_of_tiles is None: 
+                number_of_tiles = ((images[0].shape[0] * images[0].shape[1]) // (64 * 64)) * 6 
+            
+            patches = self.__random_split_batch(images , tile_size, number_of_tiles)
+            patches = [patch for value in patches for patch in value]
+            
+        elif split_patches_type == 'grid': 
+            
+            all_patches = self.__stride_split_batch(images , tile_size)
+            tmp = [] 
+            for image in all_patches: 
+                for x in range(image.shape[0]): 
+                    for y in range(image.shape[1]): 
+                        tmp.append(image[x,y,:,:,:])
+            
+            patches = tmp 
+
+        #add noise if user set it to True 
+        if noise: 
+            patches = self.__add_gaussian_noise(patches , tile_size)
+        #add horizontal flipping for data augmentation if the use set it to True 
+        if flip_patches: 
+            patches = self.__horizontal_flip_batch(patches)
+        
+        if write_single_patches:
+            for patch in patches: 
+                    self.__write_array_to_png(patch, output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
+        else: 
+            no_of_elements = (output_png_size[0] // tile_size[0]) * (output_png_size[1] // tile_size[1])
+            
+            for i in range(len(patches) // no_of_elements): 
+                concatendated = self.__concatenate_patches(patches[i * no_of_elements: (i + 1) * no_of_elements] , tile_size , output_png_size)
+                self.__write_array_to_png(concatendated , output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
+            
+            #remaining patches that didn't fit in the output_png size 
+            if len(patches) % no_of_elements != 0: 
+                offset = len(patches) // no_of_elements
+                number_of_values = len(patches[offset * no_of_elements:])
+                concatendated = self.__concatenate_patches(patches[offset * no_of_elements:] , tile_size , (tile_size[0] * number_of_values , tile_size[1]))
+                self.__write_array_to_png(concatendated , output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
+
+    def extract_patches(self, source_directory: str, output_directory: str, min_image_size: tuple = (64, 64), allowed_types: list = [], 
             split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512),
-            noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, batch_size: int = 8, write_single_patches: bool = True) -> None: 
+            noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, batch_size: int = 8, num_workers: int = 8,  write_single_patches: bool = True) -> None: 
         """Method to apply extracting patches given a set of options by the user.
         :param `source_directory`: The source directory containing the set of images to extract patches from them. 
         :type `source_directory`: str
@@ -245,6 +301,8 @@ class ImagePatchExtractor:
         :type `number_of_tiles`: int
         :param `batch_size`: Number of images to process at a time, default is `8`
         :type `batch_size`: int
+        :param `num_workers`: Number of workers (Threads) to be used for executing the process, default is `8`
+        :type `num_workers`: int
         :param `write_single_patches`: If True it write each patch as a single .png file otherwise it concatenates them as `output_png_size`. 
         :type `write_single_patches`: bool
         :returns: None
@@ -256,118 +314,71 @@ class ImagePatchExtractor:
         valid_images_list , _ = validator.validate(source_directory, min_image_size ,  False , allowed_types)
         
         os.makedirs(output_directory , exist_ok = True)
-        images = [] 
-        patches = [] 
+        
+        thread_pool = ThreadPoolExecutor(max_workers = num_workers)
+        futures = [] 
+
+        for i in range(0, len(valid_images_list) , batch_size): 
+            
+            future = thread_pool.submit(self._extract_patches_task , output_directory,  valid_images_list[i:i+batch_size], split_patches_type, tile_size,
+                                                             output_png_size, noise, flip_patches,
+                                                             number_of_tiles, write_single_patches,)
+            
+            futures.append(future)
+                    
+        
+        #Make sure all threads were executed successfully. 
         cur_working_batch = 0 
-        for image in valid_images_list: 
-            #open the image file and convert it into a numpy array. 
-            image = np.asarray(Image.open(image).convert('RGB'))
-            images.append(image)
-            if len(images) >= batch_size: 
-                #number of images has exceeded limit, should apply the extraction now
-                #check the type of patches split
-                cur_working_batch += 1
-                if split_patches_type == 'random':
-                    #If it was not set by the user then take the splits of grid size. 
-                    if number_of_tiles is None: 
-                        number_of_tiles = ((images[0].shape[0] * images[0].shape[1]) // (64 * 64)) * 6 
-                    
-                    patches = self.__random_split_batch(images , tile_size, number_of_tiles)
-                    patches = [patch for value in patches for patch in value]
-                elif split_patches_type == 'grid': 
-                    all_patches = self.__stride_split_batch(images , tile_size)
-                    tmp = [] 
-                    for image in all_patches: 
-                        for x in range(image.shape[0]): 
-                            for y in range(image.shape[1]): 
-                                tmp.append(image[x,y,:,:,:])
-                    
-                    patches = tmp 
-                    
-                
-                #add noise if user set it to True 
-                if noise: 
-                    patches = self.__add_gaussian_noise(patches , tile_size)
-                #add horizontal flipping for data augmentation if the use set it to True 
-                if flip_patches: 
-                    patches = self.__horizontal_flip_batch(patches)
-                
-                if write_single_patches:
-                    for patch in patches: 
-                         self.__write_array_to_png(patch, output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
-                else: 
-                    no_of_elements = (output_png_size[0] // tile_size[0]) * (output_png_size[1] // tile_size[1])
-                    
-                    for i in range(len(patches) // no_of_elements): 
-                        concatendated = self.__concatenate_patches(patches[i * no_of_elements: (i + 1) * no_of_elements] , tile_size , output_png_size)
-                        self.__write_array_to_png(concatendated , output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
-                    
-                    #remaining patches that didn't fit in the output_png size 
-                    if len(patches) % no_of_elements != 0: 
-                        offset = len(patches) // no_of_elements
-                        number_of_values = len(patches[offset * no_of_elements:])
-                        concatendated = self.__concatenate_patches(patches[offset * no_of_elements:] , tile_size , (tile_size[0] * number_of_values , tile_size[1]))
-                        self.__write_array_to_png(concatendated , output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
-                
-                #Frees up the image list
-                images = [] 
-                print("Finished {} batches out of {} total batches.".format(cur_working_batch , len(valid_images_list) // batch_size))
+
+        for _ in as_completed(futures):
+            cur_working_batch  += 1
+            print("Finished {} batches out of {} total batches.".format(cur_working_batch , len(valid_images_list) // batch_size))
+
+        
         return 
     
 
-def extract_patches_cli_tool(source_directory: str, output_directory: str, allowed_types: list = [], 
-            split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512) , noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, batch_size: int = 8): 
-    
+def extract_patches_cli_tool(source_directory: str, output_directory: str, min_image_size: tuple = (64, 64), allowed_types: list = [], 
+            split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512),
+            noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, batch_size: int = 8, num_workers: int = 8,  write_single_patches: bool = True) -> None: 
     """Method to apply extracting patches given a set of options by the user.
-    
-    :param source_directory: The source directory containing the set of images to extract patches from them. 
-    :type source_directory: str
-    :param output_directory: The output directory to save the `PNG` images of concatenated patches. 
-    :type output_directory: str
-    :param allowed_types: a list of allowed images formats (Image codecs) to be considered within the dataset. 
-    :type allowed_types: list
-    :param split_patches_type: Type of patch splitting, `random` or `grid`
-    :type split_patches_type: str
-    :param tile_size: The desired patch size, default is `(32,32)`
-    :type tile_size: tuple(int , int)
-    :param output_png_size: The output size of the `PNG` image of concatenated patches, note it should be divisible by `tile_size`
-    :type output_png_size: tuple(int , int)
-    :param noise: When `True` it adds `Gaussian` noise to the output patches
-    :type noise: bool
-    :param flip_patches: When `True` it flips the patches horizontally with probability of 50%
-    :type flip_patches: bool
+    :param `source_directory`: The source directory containing the set of images to extract patches from them. 
+    :type `source_directory`: str
+    :param `output_directory`: The output directory to save the `PNG` images of concatenated patches. 
+    :type `output_directory`: str
+    :param `min_image_size`: min size of image dimension to be considered as valid image, comparison is made with on each dimension.  
+    :type `min_image_size`: tuple
+    :param `allowed_types`: a list of allowed images formats (Image codecs) to be considered within the dataset it accepts all 
+            types when left as an empty list, default is `[]`
+    :type `allowed_types`: list
+    :param `split_patches_type`: Type of patch splitting, `random` or `grid` default is `random` 
+    :type `split_patches_type`: str
+    :param `tile_size`: The desired patch size, default is `(32,32)`
+    :type `tile_size`: tuple(int , int)
+    :param `output_png_size`: The output size of the `PNG` image of concatenated patches, note it should be divisible by `tile_size` default is `(512,512)`
+    :type `output_png_size`: tuple(int , int)
+    :param `noise`: When `True` it adds `Gaussian` noise to the output patches, default is `False` 
+    :type `noise`: bool
+    :param `flip_patches`: When `True` it flips the patches horizontally with probability of 50%, default is `False` 
+    :type `flip_patches`: bool
     :param `number_of_tiles`: Number of tiles to be extracted if the `split_patches_type` param was set to `random`,
                 if it was not set then the tool will set it to the number of grid splits in the image with size of `tile_size`.  
     :type `number_of_tiles`: int
-    :param batch_size: Number of images to process at a time
-    :type batch_size: int
+    :param `batch_size`: Number of images to process at a time, default is `8`
+    :type `batch_size`: int
+    :param `num_workers`: Number of workers (Threads) to be used for executing the process, default is `8`
+    :type `num_workers`: int
+    :param `write_single_patches`: If True it write each patch as a single .png file otherwise it concatenates them as `output_png_size`. 
+    :type `write_single_patches`: bool
     :returns: None
     :rtype: None
     """
     start_time = time.time() 
     patch_extractor = ImagePatchExtractor()
-    patch_extractor.extract_patches(source_directory , output_directory , allowed_types , split_patches_type, tile_size, output_png_size , noise , flip_patches, number_of_tiles, batch_size)
+    patch_extractor.extract_patches(source_directory , output_directory , min_image_size,  allowed_types , split_patches_type, tile_size, output_png_size , noise , flip_patches, number_of_tiles, batch_size , num_workers, write_single_patches)
     
     print("Process took {:.2f} seconds to finish your task".format(time.time() - start_time))
 if __name__ == "__main__": 
 
-    # fire.Fire(extract_patches_cli_tool)
+    fire.Fire(extract_patches_cli_tool)
     
-    instance = ImagePatchExtractor() 
-    
-    instance.extract_patches('./data/PixelJoint/database/cleaned-files-png-jpeg-only', './PixelJoint_32x32_random_patches', batch_size = 8)
-    # instance = ImagePatchExtractor() 
-    # start = time.time()
-    # instance._resize_image_folder('./data/PixelJoint/database/cleaned-files-png-jpeg-only' , './PixelJoint_jpeg_png_only_16x16' , (16,16))
-    
-    # print(time.time() - start)    
-
-    # start = time.time()
-    # instance._resize_image_folder('./data/PixelJoint/database/cleaned-files-png-jpeg-only' , './PixelJoint_jpeg_png_only_32x32' , (32,32))
-    
-    # print(time.time() - start)    
-    
-    # start = time.time()
-    # instance._resize_image_folder('./data/PixelJoint/database/cleaned-files-png-jpeg-only' , './PixelJoint_jpeg_png_only_64x64' , (64,64))
-    
-    # print(time.time() - start)
