@@ -1,11 +1,13 @@
-import math
+from ast import Tuple
+import base64
+import hashlib
 import time
+from turtle import position
 import numpy as np
 import cv2
 from PIL import Image
 import random
 import os
-import string
 from ImageValidator import ImageValidator
 import fire 
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -98,7 +100,7 @@ class ImagePatchExtractor:
         """
         return [self.__stride_split(image , tile_size) for image in images]
 
-    def __random_split(self, image: np.ndarray, tile_size: tuple , number_of_tiles: int) -> list[np.ndarray]: 
+    def __random_split(self, image: np.ndarray, tile_size: tuple , number_of_tiles: int) -> tuple: 
         """Splits the given image into number of tiles with the given tile size with random locations.  
 
         :param image: The image matrix needed for splitting into tiles. 
@@ -111,12 +113,14 @@ class ImagePatchExtractor:
         :rtype: list[ndarray] 
         """
         tiles = [] 
+        positions = [] 
         for _ in range(number_of_tiles): 
             rand_x = random.randint(0 , image.shape[0] - tile_size[0]) 
-            rand_y = random.randint(0 , image.shape[1] - tile_size[1] ) 
+            rand_y = random.randint(0 , image.shape[1] - tile_size[1])
             tiles.append(image[rand_x: rand_x + tile_size[0], rand_y: rand_y + tile_size[1],:])
+            positions.append((rand_x, rand_y))
             
-        return tiles
+        return (tiles, positions)
     
     def __random_split_batch(self, images: list[np.ndarray], tile_size: tuple, number_of_tiles: int) -> list[list[np.ndarray]]: 
         """Splits a batch of images into tiles with the given tile size with randomly generated offsets from the image
@@ -153,19 +157,40 @@ class ImagePatchExtractor:
             result[(row * tile_size[0]):(row + 1) * tile_size[0],:] = np.hstack(patches[row * number_of_cols: (row + 1) * number_of_cols])
             
         return result
+    
+    @staticmethod
+    def __base64url_encode(object: str) -> str: 
+        """ encodes a string into base64url format 
+        :param object: The object to be encoded to base64url. 
+        :type object: str
+        :returns: The base64url encodings of the given string
+        :rtype: str
+        """
 
-    def __write_array_to_png(self, image: np.ndarray , output_directory: str , file_name: str) -> None:
-        """Writes the given numpy array into a `PNG` image and saves it into the specified directory. 
+        return base64.urlsafe_b64encode(bytes(object , 'utf-8')).decode('ascii')
+
+    def __write_array_to_png(self, image: np.ndarray , output_directory: str , prefix: str = None,  file_name: str = None) -> None:
+        """Writes the given numpy array into a `PNG` image and saves it into the specified directory, if file name is `None` then 
+                the file name will be the base64url encodings of sha256 of the provided image.  
 
         :param image: The numpy array containing the values to be written into the `PNG` image
         :type image: ndarray
         :param output_directory: The directory to save the resultant image. 
         :type output_directory: str
-        :param file_name: The file name of the save image. 
+        :param prefix: if not `None` then it's added as a prefix for the written file name. 
+        :type prefix: str
+        :param file_name: The file name of the save image,if file name is `None` then the file name will be the base64url encodings of sha256 of the provided image.   
         :type file_name: str
         :returns: None
         :rtype: None
         """  
+
+        if file_name is None: 
+            file_name = self.__base64url_encode(hashlib.sha256(image.tobytes()).hexdigest())
+        
+        if prefix is not None: 
+            file_name = prefix + file_name
+        
         Image.fromarray(image.astype(np.uint8)).save(os.path.join(output_directory , "{}.png".format(file_name))) 
         
         return  
@@ -235,8 +260,11 @@ class ImagePatchExtractor:
             if number_of_tiles is None: 
                 number_of_tiles = ((images[0].shape[0] * images[0].shape[1]) // (64 * 64)) * 6 
             
-            patches = self.__random_split_batch(images , tile_size, number_of_tiles)
-            patches = [patch for value in patches for patch in value]
+            #Returns tuple of patches list and positions list.
+            patches_and_positions = self.__random_split_batch(images , tile_size, number_of_tiles)
+            
+            patches = [patch for value in patches_and_positions for patch in value[0]]
+            positions = [position for value in patches_and_positions for position in value[1]]
             
         elif split_patches_type == 'grid': 
             
@@ -257,21 +285,22 @@ class ImagePatchExtractor:
             patches = self.__horizontal_flip_batch(patches)
         
         if write_single_patches:
-            for patch in patches: 
-                    self.__write_array_to_png(patch, output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
+            for idx, patch in enumerate(patches): 
+                left_corner = "{}_{}_".format(positions[idx][0], positions[idx][1])
+                self.__write_array_to_png(patch, output_directory , prefix = left_corner)
         else: 
             no_of_elements = (output_png_size[0] // tile_size[0]) * (output_png_size[1] // tile_size[1])
             
             for i in range(len(patches) // no_of_elements): 
                 concatendated = self.__concatenate_patches(patches[i * no_of_elements: (i + 1) * no_of_elements] , tile_size , output_png_size)
-                self.__write_array_to_png(concatendated , output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
+                self.__write_array_to_png(concatendated , output_directory)
             
             #remaining patches that didn't fit in the output_png size 
             if len(patches) % no_of_elements != 0: 
                 offset = len(patches) // no_of_elements
                 number_of_values = len(patches[offset * no_of_elements:])
                 concatendated = self.__concatenate_patches(patches[offset * no_of_elements:] , tile_size , (tile_size[0] * number_of_values , tile_size[1]))
-                self.__write_array_to_png(concatendated , output_directory , ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8)))
+                self.__write_array_to_png(concatendated , output_directory)
 
     def extract_patches(self, source_directory: str, output_directory: str, min_image_size: tuple = (64, 64), allowed_types: list = [], 
             split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512),
