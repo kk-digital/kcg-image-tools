@@ -11,6 +11,7 @@ import os
 from ImageValidator import ImageValidator
 import fire 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from Base36lib import Base36
 
 class ImagePatchExtractor: 
     
@@ -169,7 +170,7 @@ class ImagePatchExtractor:
 
         return base64.urlsafe_b64encode(bytes(object , 'utf-8')).decode('ascii')
 
-    def __write_array_to_png(self, image: np.ndarray , output_directory: str , prefix: str = None,  file_name: str = None) -> None:
+    def __write_array_to_png(self, image: np.ndarray , output_directory: str , prefix: str = None,  file_name: str = None , base36: int = None) -> None:
         """Writes the given numpy array into a `PNG` image and saves it into the specified directory, if file name is `None` then 
                 the file name will be the base64url encodings of sha256 of the provided image.  
 
@@ -181,12 +182,18 @@ class ImagePatchExtractor:
         :type prefix: str
         :param file_name: The file name of the save image,if file name is `None` then the file name will be the base64url encodings of sha256 of the provided image.   
         :type file_name: str
+        :param `base36`: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :type `base36`: int
         :returns: None
         :rtype: None
         """  
 
         if file_name is None: 
             file_name = self.__base64url_encode(hashlib.sha256(image.tobytes()).hexdigest())
+
+            if base36 is not None: 
+                file_name = Base36.encode(file_name)
+                file_name = file_name[:min(len(file_name), base36)]
         
         if prefix is not None: 
             file_name = prefix + file_name
@@ -244,7 +251,7 @@ class ImagePatchExtractor:
     ##############################################################################
     
     def _extract_patches_task(self, output_directory: str, image_files: list[str], split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512),
-            noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, write_single_patches: bool = True): 
+            noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, write_single_patches: bool = True, base36: int = None): 
         """Method to apply patch extraction in for a batch of images, used to be executed as a task inside a thread. 
         """
         images = [] 
@@ -287,7 +294,7 @@ class ImagePatchExtractor:
         if write_single_patches:
             for idx, patch in enumerate(patches): 
                 left_corner = "{}_{}_".format(positions[idx][0], positions[idx][1])
-                self.__write_array_to_png(patch, output_directory , prefix = left_corner)
+                self.__write_array_to_png(patch, output_directory , prefix = left_corner , base36 = base36)
         else: 
             no_of_elements = (output_png_size[0] // tile_size[0]) * (output_png_size[1] // tile_size[1])
             
@@ -304,7 +311,7 @@ class ImagePatchExtractor:
 
     def extract_patches(self, source_directory: str, output_directory: str, min_image_size: tuple = (64, 64), allowed_types: list = [], 
             split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512),
-            noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, batch_size: int = 8, num_workers: int = 8,  write_single_patches: bool = True) -> None: 
+            noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, batch_size: int = 8, num_workers: int = 8,  write_single_patches: bool = True , base36: int = None) -> None: 
         """Method to apply extracting patches given a set of options by the user.
         :param `source_directory`: The source directory containing the set of images to extract patches from them. 
         :type `source_directory`: str
@@ -334,6 +341,8 @@ class ImagePatchExtractor:
         :type `num_workers`: int
         :param `write_single_patches`: If True it write each patch as a single .png file otherwise it concatenates them as `output_png_size`. 
         :type `write_single_patches`: bool
+        :param `base36`: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :type `base36`: int
         :returns: None
         :rtype: None
         """
@@ -351,7 +360,7 @@ class ImagePatchExtractor:
             
             future = thread_pool.submit(self._extract_patches_task , output_directory,  valid_images_list[i:i+batch_size], split_patches_type, tile_size,
                                                              output_png_size, noise, flip_patches,
-                                                             number_of_tiles, write_single_patches,)
+                                                             number_of_tiles, write_single_patches, base36, )
             
             futures.append(future)
                     
@@ -369,7 +378,7 @@ class ImagePatchExtractor:
 
 def extract_patches_cli_tool(source_directory: str, output_directory: str, min_image_size: tuple = (64, 64), allowed_types: list = [], 
             split_patches_type: str = "random",  tile_size: tuple = (32 , 32), output_png_size: tuple = (512,512),
-            noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, batch_size: int = 8, num_workers: int = 8,  write_single_patches: bool = True) -> None: 
+            noise: bool = False, flip_patches: bool = False, number_of_tiles: int = None, batch_size: int = 8, num_workers: int = 8,  write_single_patches: bool = True , base36: int = None) -> None: 
     """Method to apply extracting patches given a set of options by the user.
     :param `source_directory`: The source directory containing the set of images to extract patches from them. 
     :type `source_directory`: str
@@ -399,12 +408,14 @@ def extract_patches_cli_tool(source_directory: str, output_directory: str, min_i
     :type `num_workers`: int
     :param `write_single_patches`: If True it write each patch as a single .png file otherwise it concatenates them as `output_png_size`. 
     :type `write_single_patches`: bool
+    :param `base36`: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+    :type `base36`: int
     :returns: None
     :rtype: None
     """
     start_time = time.time() 
     patch_extractor = ImagePatchExtractor()
-    patch_extractor.extract_patches(source_directory , output_directory , min_image_size,  allowed_types , split_patches_type, tile_size, output_png_size , noise , flip_patches, number_of_tiles, batch_size , num_workers, write_single_patches)
+    patch_extractor.extract_patches(source_directory , output_directory , min_image_size,  allowed_types , split_patches_type, tile_size, output_png_size , noise , flip_patches, number_of_tiles, batch_size , num_workers, write_single_patches , base36)
     
     print("Process took {:.2f} seconds to finish your task".format(time.time() - start_time))
 if __name__ == "__main__": 
