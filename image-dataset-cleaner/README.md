@@ -26,6 +26,8 @@ pip install -r src/to/dir/requirements.txt
 
 * `max_size` _[tuple(int,int)]_ - _[optional]_ - Max target image size (if the image is larger than it then it's ignored and not copied), default is `(16384,16384)`
 
+* `base36` _[int]_ - _[optional]_ - Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied, Please be careful when using this as it may result in duplication, so choose a large value to avoid collision, (choose values larger than 25)
+
 * `num_workers` _[int]_ - _[optional]_ - number of workers (threads) to be used in the process, default value is `8`.
 
 ## Example Usage

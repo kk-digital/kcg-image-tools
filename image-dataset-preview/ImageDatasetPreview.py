@@ -1,3 +1,4 @@
+import hashlib
 import os
 from random import shuffle
 import random
@@ -7,10 +8,20 @@ from PIL import Image
 import fire 
 import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from Base36lib import Base36
 
 class ImageDatasetPreview: 
     def __init__(self): 
         return 
+
+    def __image_to_sha256(self, image: Image.Image) -> str: 
+        """Method to compute the sha256 of an image given the image as PIL.Image instance. 
+        :param image: The directory to get the it's files paths
+        :type image: str
+        :returns: sha256 of the image
+        :rtype: str
+        """
+        return hashlib.sha256(image.tobytes()).hexdigest()
 
     def __get_files_list(self, directory: str) -> list[str]: 
         """returns a list of file paths for a given directory
@@ -32,7 +43,7 @@ class ImageDatasetPreview:
         return 'L' if color_mode.lower() == 'grey' else 'RGB'
     
     def __write_images_to_grid(self, output_directory: str, images: list[str], PIL_color_mode: str,
-                               image_size: tuple[int, int] = (64 , 64),matrix_size: tuple[int, int] = (32 , 32)) -> None: 
+                               image_size: tuple[int, int] = (64 , 64),matrix_size: tuple[int, int] = (32 , 32), base36: int = None) -> None: 
         """ Given a list of images paths, the method scale them down and concatenates them into large image 
             matrix with a given size and writes the matrix/grid image into `output_directory` as `.png`. 
                         
@@ -46,6 +57,8 @@ class ImageDatasetPreview:
         :type image_size: tuple[int,int]
         :param matrix_size: The size of the preview matrix image (number of images to be included as width and height of the matrix)
         :type matrix_size: tuple[int,int]
+        :param base36: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :type base36: int
         :returns: None
         :rtype: None
         """
@@ -64,12 +77,18 @@ class ImageDatasetPreview:
             matrix_img.paste(img , box = ((count % matrix_size[0]) * image_size[0] , (count // matrix_size[1]) * image_size[1]) )
             count += 1 
         
+        file_name = self.__image_to_sha256(matrix_img)
+        
+        #convert to Base36 if the flag is provided by the user.
+        if base36 is not None: 
+            file_name = Base36.encode(file_name)[:min(len(file_name), base36)]
+        
         #save the image file in the output directory. 
-        matrix_img.save(os.path.join(output_directory, ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))) + '.png')
+        matrix_img.save(os.path.join(output_directory, file_name) + '.png')
 
         
     def preview_image_dataset(self, source_directory: str, output_directory: str,  image_size: tuple[int, int] = (64 , 64), 
-                                matrix_size: tuple[int, int] = (32 , 32), color_mode: str = 'rgb' , images_order_mode: str = 'sorted', num_workers: int = 8) -> None: 
+                                matrix_size: tuple[int, int] = (32 , 32), color_mode: str = 'rgb' , images_order_mode: str = 'sorted', base36: int = None,  num_workers: int = 8) -> None: 
         """ Given a source directory containing images,the tool reads this images scale them down and concatenates them into large image 
                 matrix with a given size for preview.
                         
@@ -85,6 +104,8 @@ class ImageDatasetPreview:
         :type color_mode: str
         :param images_order_mode: The order of images of preview to be random (shuffled) or sorted based on the image file name, options are `random` or `sorted` default is `sorted`
         :type images_order_mode: str
+        :param base36: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :type base36: int
         :param num_workers: Number of threads to be used in executing the process, default is `8` 
         :type num_workers: int
         :returns: None
@@ -115,7 +136,7 @@ class ImageDatasetPreview:
             #take the batch of images files.
             imgs = images[batch * batch_size: min((batch + 1) * batch_size , len(images))]
             
-            task = thread_pool.submit(self.__write_images_to_grid, output_directory, imgs, PIL_color_mode, image_size, matrix_size,)
+            task = thread_pool.submit(self.__write_images_to_grid, output_directory, imgs, PIL_color_mode, image_size, matrix_size, base36, )
             
             futures.append(task)
         
@@ -129,7 +150,7 @@ class ImageDatasetPreview:
     
     
 def image_dataset_preview_cli(source_directory: str, output_directory: str,  image_size: tuple = (64 , 64), 
-                                        matrix_size: tuple = (32 , 32), color_mode: str = 'rgb' , images_order_mode: str = 'sorted', num_workers: int = 8) -> None: 
+                                        matrix_size: tuple = (32 , 32), color_mode: str = 'rgb' , images_order_mode: str = 'sorted', base36: int = None,  num_workers: int = 8) -> None: 
     """ Given a source directory containing images,the tool reads this images scale them down and concatenates them into large image 
             matrix with a given size for preview.
                     
@@ -145,6 +166,8 @@ def image_dataset_preview_cli(source_directory: str, output_directory: str,  ima
         :type color_mode: str
         :param images_order_mode: The order of images of preview to be random (shuffled) or sorted based on the image file name, options are `random` or `sorted` default is `sorted`
         :type images_order_mode: str
+        :param base36: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :type base36: int
         :param num_workers: Number of threads to be used in executing the process, default is `8` 
         :type num_workers: int
         :returns: None
@@ -154,7 +177,7 @@ def image_dataset_preview_cli(source_directory: str, output_directory: str,  ima
     start = time.time() 
     preview_dataset = ImageDatasetPreview()
     
-    preview_dataset.preview_image_dataset(source_directory , output_directory, image_size, matrix_size, color_mode, images_order_mode, num_workers)
+    preview_dataset.preview_image_dataset(source_directory , output_directory, image_size, matrix_size, color_mode, images_order_mode, base36, num_workers)
 
     print("Process took {} seconds to execute".format(time.time() - start))
 if __name__ == "__main__":     
