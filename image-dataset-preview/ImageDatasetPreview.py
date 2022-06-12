@@ -121,6 +121,9 @@ class ImageDatasetPreview:
         #get the PIL color mode to convert all images to it when read. 
         PIL_color_mode = self.__get_PIL_color_conversion_mode(color_mode)
         
+        #fetch all files previously existed in the output_directory
+        self.written_files = {os.path.splitext(os.path.basename(path))[0]: True for path in self.__get_files_list(output_directory)}
+        
         batch_size = matrix_size[0] * matrix_size[1]
         #iterate through all the images list to open the files and start working on them
         
