@@ -26,6 +26,8 @@ pip install -r src/to/dir/requirements.txt
 
 * `max_size` _[tuple(int,int)]_ - _[optional]_ - Max target image size (if the image is larger than it then it's ignored and not copied), default is `(16384,16384)`
 
+* `num_workers` _[int]_ - _[optional]_ - number of workers (threads) to be used in the process, default value is `8`.
+
 ## Example Usage
 
 ```
