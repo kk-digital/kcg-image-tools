@@ -18,6 +18,15 @@ class ImagePatchExtractor:
     def __init__(self): 
         self.written_files = {} 
         return 
+    
+    def __get_files_list(self, directory: str) -> list[str]: 
+        """returns a list of file paths for a given directory
+        :param directory: The directory to get the it's files paths
+        :type directory: str
+        :returns: list of files
+        :rtype: list[str]
+        """
+        return [os.path.join(directory , image_file) for image_file in os.listdir(directory)]
 
     def __horizontal_flip(self, image: np.ndarray) -> np.ndarray: 
         """applies horizontal flip to the image and returns a view of the flipped version
@@ -360,6 +369,9 @@ class ImagePatchExtractor:
         
         os.makedirs(output_directory , exist_ok = True)
         
+        #Fetch all files previously available in output_directory
+        self.written_files = {os.path.splitext(os.path.basename(path))[0]: True for path in self.__get_files_list(output_directory)}
+
         thread_pool = ThreadPoolExecutor(max_workers = num_workers)
         futures = [] 
 
