@@ -39,7 +39,7 @@ pip install -r src/to/dir/requirements.txt
 
 * `write_single_patches` _[bool]_ - _[optional]_ If True it write each patch as a single `.png` file otherwise it concatenates them as grid of size `output_png_size`, default is `True`.
 
-* `base36` _[int]_ - _[optional]_ - Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied, Please be careful when using this as it may result in duplication, so choose a large value to avoid collision, (choose large values as you can).
+* `base36` _[int]_ - _[optional]_ - Number of 1st N chars of base36 of the base64url of the blake2b of the image, if is set to `None` then nothing is applied, Please be careful when using this as it may result in duplication, so choose a large value to avoid collision, (choose large values as you can).
 
 ## Example Usage
 

@@ -12,16 +12,17 @@ from Base36lib import Base36
 
 class ImageDatasetPreview: 
     def __init__(self): 
+        self.written_files = {} 
         return 
 
-    def __image_to_sha256(self, image: Image.Image) -> str: 
-        """Method to compute the sha256 of an image given the image as PIL.Image instance. 
+    def __image_to_blake2b(self, image: Image.Image) -> str: 
+        """Method to compute the blake2b of an image given the image as PIL.Image instance. 
         :param image: The directory to get the it's files paths
         :type image: str
-        :returns: sha256 of the image
+        :returns: blake2b of the image
         :rtype: str
         """
-        return hashlib.sha256(image.tobytes()).hexdigest()
+        return hashlib.blake2b(image.tobytes()).hexdigest()
 
     def __get_files_list(self, directory: str) -> list[str]: 
         """returns a list of file paths for a given directory
@@ -57,7 +58,7 @@ class ImageDatasetPreview:
         :type image_size: tuple[int,int]
         :param matrix_size: The size of the preview matrix image (number of images to be included as width and height of the matrix)
         :type matrix_size: tuple[int,int]
-        :param base36: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :param base36: Number of 1st N chars of base36 of the base64url of the blake2b of the image, if is set to `None` then nothing is applied.
         :type base36: int
         :returns: None
         :rtype: None
@@ -77,14 +78,16 @@ class ImageDatasetPreview:
             matrix_img.paste(img , box = ((count % matrix_size[0]) * image_size[0] , (count // matrix_size[1]) * image_size[1]) )
             count += 1 
         
-        file_name = self.__image_to_sha256(matrix_img)
+        file_name = self.__image_to_blake2b(matrix_img)
         
         #convert to Base36 if the flag is provided by the user.
         if base36 is not None: 
             file_name = Base36.encode(file_name)[:min(len(file_name), base36)]
         
-        #save the image file in the output directory. 
-        matrix_img.save(os.path.join(output_directory, file_name) + '.png')
+        #make sure the file was not written before. 
+        if file_name not in self.written_files: 
+            #save the image file in the output directory. 
+            matrix_img.save(os.path.join(output_directory, file_name) + '.png')
 
         
     def preview_image_dataset(self, source_directory: str, output_directory: str,  image_size: tuple[int, int] = (64 , 64), 
@@ -104,7 +107,7 @@ class ImageDatasetPreview:
         :type color_mode: str
         :param images_order_mode: The order of images of preview to be random (shuffled) or sorted based on the image file name, options are `random` or `sorted` default is `sorted`
         :type images_order_mode: str
-        :param base36: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :param base36: Number of 1st N chars of base36 of the base64url of the blake2b of the image, if is set to `None` then nothing is applied.
         :type base36: int
         :param num_workers: Number of threads to be used in executing the process, default is `8` 
         :type num_workers: int
@@ -117,6 +120,9 @@ class ImageDatasetPreview:
         images = self.__get_files_list(source_directory)
         #get the PIL color mode to convert all images to it when read. 
         PIL_color_mode = self.__get_PIL_color_conversion_mode(color_mode)
+        
+        #fetch all files previously existed in the output_directory
+        self.written_files = {os.path.splitext(os.path.basename(path))[0]: True for path in self.__get_files_list(output_directory)}
         
         batch_size = matrix_size[0] * matrix_size[1]
         #iterate through all the images list to open the files and start working on them
@@ -166,7 +172,7 @@ def image_dataset_preview_cli(source_directory: str, output_directory: str,  ima
         :type color_mode: str
         :param images_order_mode: The order of images of preview to be random (shuffled) or sorted based on the image file name, options are `random` or `sorted` default is `sorted`
         :type images_order_mode: str
-        :param base36: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :param base36: Number of 1st N chars of base36 of the base64url of the blake2b of the image, if is set to `None` then nothing is applied.
         :type base36: int
         :param num_workers: Number of threads to be used in executing the process, default is `8` 
         :type num_workers: int

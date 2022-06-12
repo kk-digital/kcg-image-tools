@@ -6,8 +6,8 @@
 Given a `source directory` containing images, it applies some conditions and copies the valid images into the `output directory` and two json files of the status of processed images saved in the same output directory with names `failed-images.json` and `images-info.json`
 
 - Make sure if the image file is not corrupted
-- Checks if the image format is within the given allowed image formats (codecs) provided as an option to the cli defualts are `JPEG` and `PNG` only 
-- Check if the image size is withing the range of `min size` and `max size` provided by the user as an option defualts are `(32,32)` for `min size` and `(16384,16384)` for `max size`
+- Checks if the image format is within the given allowed image formats (codecs) provided as an option to the cli defaults are `JPEG` and `PNG` only 
+- Check if the image size is withing the range of `min size` and `max size` provided by the user as an option defaults are `(32,32)` for `min size` and `(16384,16384)` for `max size`
 
 ## Installation
 All that's needed to start using ImageDatasetCleaner is to install the dependencies using the command
@@ -26,7 +26,7 @@ pip install -r src/to/dir/requirements.txt
 
 * `max_size` _[tuple(int,int)]_ - _[optional]_ - Max target image size (if the image is larger than it then it's ignored and not copied), default is `(16384,16384)`
 
-* `base36` _[int]_ - _[optional]_ - Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied, Please be careful when using this as it may result in duplication, so choose a large value to avoid collision, (choose values larger than 25)
+* `base36` _[int]_ - _[optional]_ - Number of 1st N chars of base36 of the base64url of the blake2b of the image, if is set to `None` then nothing is applied, Please be careful when using this as it may result in duplication, so choose a large value to avoid collision, (choose values larger than 25)
 
 * `num_workers` _[int]_ - _[optional]_ - number of workers (threads) to be used in the process, default value is `8`.
 
@@ -58,16 +58,16 @@ Example of `images-info.json`
         "original_file_name": "some_image_name.png",
         "file_size": 6042,
         "image_size": "(200,200)",
-        "sha256": "74cd6c26e76344efe017ec92aa7458f37e124e50bfe1df64c6ae3652bf278d91",
-        "base64sha256": "NzRjZDZjMjZlNzYzNDRlZmUwMTdlYzkyYWE3NDU4ZjM3ZTEyNGU1MGJmZTFkZjY0YzZhZTM2NTJiZjI3OGQ5MQ=="
+        "blake2b": "74cd6c26e76344efe017ec92aa7458f37e124e50bfe1df64c6ae3652bf278d91",
+        "base64urlblake2b": "NzRjZDZjMjZlNzYzNDRlZmUwMTdlYzkyYWE3NDU4ZjM3ZTEyNGU1MGJmZTFkZjY0YzZhZTM2NTJiZjI3OGQ5MQ=="
     },
     "some_other_image_name.png": {
         "format": "png",
         "original_file_name": "some_other_image_name.png",
         "file_size": 5945,
         "image_size": "(200,200)",
-        "sha256": "74e04e7bd21bf0f756ed9fa55cd77ab5770ff50bd4838563c78232170b798c5a",
-        "base64sha256": "NzRlMDRlN2JkMjFiZjBmNzU2ZWQ5ZmE1NWNkNzdhYjU3NzBmZjUwYmQ0ODM4NTYzYzc4MjMyMTcwYjc5OGM1YQ=="
+        "blake2b": "74e04e7bd21bf0f756ed9fa55cd77ab5770ff50bd4838563c78232170b798c5a",
+        "base64urlblake2b": "NzRlMDRlN2JkMjFiZjBmNzU2ZWQ5ZmE1NWNkNzdhYjU3NzBmZjUwYmQ0ODM4NTYzYzc4MjMyMTcwYjc5OGM1YQ=="
     },
 }
 ```

@@ -12,6 +12,7 @@ from Base36lib import Base36
 class ImageDatasetCleaner: 
     
     def __init__(self) -> None:
+        self.copied_files = {} 
         return 
     
     def get_files_list(directory: str , recursive: bool) -> list[str]: 
@@ -54,20 +55,20 @@ class ImageDatasetCleaner:
 
         return base64.urlsafe_b64encode(bytes(object , 'utf-8')).decode('ascii')
     
-    def __base64urlsha256(object: bytes , depth: int = 2) -> str: 
-        """ Given a buffer of bytes, the function computes the sha256 recursively with `depth` times 
+    def __base64urlblake2b(object: bytes , depth: int = 2) -> str: 
+        """ Given a buffer of bytes, the function computes the blake2b recursively with `depth` times 
                     and returns it in base64url encodings
-        :param object: The object to be encoded to base64sha256. 
+        :param object: The object to be encoded to base64blake2b. 
         :type object: str
-        :param depth: Number of repeated computations of the base64sha256 encodings 
+        :param depth: Number of repeated computations of the base64blake2b encodings 
         :type depth: int
-        :returns: The base64sha256 encodings of the given string
+        :returns: The base64blake2b encodings of the given string
         :rtype: str
         """
         if depth == 1: 
-            return ImageDatasetCleaner.__base64url_encode(hashlib.sha256(object).hexdigest())
+            return ImageDatasetCleaner.__base64url_encode(hashlib.blake2b(object).hexdigest())
     
-        return ImageDatasetCleaner.__base64urlsha256(bytes(hashlib.sha256(object).hexdigest(), 'ascii') , depth - 1)
+        return ImageDatasetCleaner.__base64urlblake2b(bytes(hashlib.blake2b(object).hexdigest(), 'ascii') , depth - 1)
     
     def __validate_image_task(self, image: str, output_directory: str, allowed_formats = ['PNG' , 'JPEG'],
                               min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024), base36: int = None): 
@@ -83,7 +84,7 @@ class ImageDatasetCleaner:
         :type min_size: tuple
         :param max_size: max target image size (if the image is larger than it then it's ignored and not copied). 
         :type max_size: tuple
-        :param base36: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :param base36: Number of 1st N chars of base36 of the base64url of the blake2b of the image, if is set to `None` then nothing is applied.
         :type base36: int
         :returns: The original image file name, the new image file name,   `image_info` and `failed_image` and errors and list.  
         :rtype: (str, str, dict, dict, list)
@@ -121,8 +122,8 @@ class ImageDatasetCleaner:
                 'original_file_name': file_name, 
                 'file_size': os.stat(image).st_size, 
                 'image_size': "({},{})".format(im.size[0] , im.size[1]), 
-                'sha256': hashlib.sha256(im.tobytes()).hexdigest(), 
-                'base64sha256': ImageDatasetCleaner.__base64urlsha256(im.tobytes() , depth = 1),
+                'blake2b': hashlib.blake2b(im.tobytes()).hexdigest(), 
+                'base64urlblake2b': ImageDatasetCleaner.__base64urlblake2b(im.tobytes() , depth = 1),
             }
             
         except Exception: 
@@ -131,23 +132,25 @@ class ImageDatasetCleaner:
                 'original_file_name': file_name, 
                 'file_size': os.stat(image).st_size, 
                 'image_size': 'unk', 
-                'sha256': 'unk', 
-                'base64urlsha256': 'unk', 
+                'blake2b': 'unk', 
+                'base64urlblake2b': 'unk', 
             }
 
         #init the variable to make sure it return something if there is errors with the image
         new_file_name = '' 
         if not errors: 
             try: 
-                new_file_name = ImageDatasetCleaner.__base64urlsha256(im.tobytes())
+                new_file_name = ImageDatasetCleaner.__base64urlblake2b(im.tobytes())
                 #check if base36 was chosen as the naming convention for the files
                 if base36 is not None: 
                     new_file_name = Base36.encode(new_file_name)[:min(len(new_file_name), base36)]
                 
-                shutil.copy2(image , os.path.join(output_directory , "{}.{}".format(new_file_name , im.format.lower())))
+                #make sure the image was not written before to the directory. 
+                if new_file_name not in self.copied_files: 
+                    self.copied_files[new_file_name] = True 
+                    shutil.copy2(image , os.path.join(output_directory , "{}.{}".format(new_file_name , im.format.lower())))
             
             except Exception as ex: 
-                print(ex)
                 errors.append("Image is corrupted")
         
         if errors:
@@ -175,7 +178,7 @@ class ImageDatasetCleaner:
         :type min_size: tuple
         :param max_size: max target image size (if the image is larger than it then it's ignored and not copied). 
         :type max_size: tuple
-        :param base36: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :param base36: Number of 1st N chars of base36 of the base64url of the blake2b of the image, if is set to `None` then nothing is applied.
         :type base36: int
         :param num_workers: number of workers (threads) to be used in the process, default value is `8`. 
         :type num_workers: int
@@ -192,6 +195,9 @@ class ImageDatasetCleaner:
         failed_images = {} 
         counter = 0 
         
+        #Fetch all files previously available in output_directory
+        self.copied_files = {os.path.splitext(os.path.basename(path))[0]: True for path in ImageDatasetCleaner.get_files_list(output_directory, False)}
+
         #Define the thread pool. 
         thread_pool = ThreadPoolExecutor(max_workers = num_workers)
         futures = [] 
@@ -247,7 +253,7 @@ def image_dataset_cleaner_cli(source_directory: str , output_directory: str, all
         :type min_size: tuple
         :param max_size: max target image size (if the image is larger than it then it's ignored and not copied). 
         :type max_size: tuple
-        :param base36: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :param base36: Number of 1st N chars of base36 of the base64url of the blake2b of the image, if is set to `None` then nothing is applied.
         :type base36: int
         :param num_workers: number of workers (threads) to be used in the process, default value is `8`. 
         :type num_workers: int
