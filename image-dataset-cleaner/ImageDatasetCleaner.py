@@ -195,6 +195,9 @@ class ImageDatasetCleaner:
         failed_images = {} 
         counter = 0 
         
+        #Fetch all files previously available in output_directory
+        self.copied_files = {os.path.splitext(os.path.basename(path))[0]: True for path in ImageDatasetCleaner.get_files_list(output_directory, False)}
+
         #Define the thread pool. 
         thread_pool = ThreadPoolExecutor(max_workers = num_workers)
         futures = [] 
