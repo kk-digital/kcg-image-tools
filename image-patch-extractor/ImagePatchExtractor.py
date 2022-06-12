@@ -16,6 +16,7 @@ from Base36lib import Base36
 class ImagePatchExtractor: 
     
     def __init__(self): 
+        self.written_files = {} 
         return 
 
     def __horizontal_flip(self, image: np.ndarray) -> np.ndarray: 
@@ -172,7 +173,7 @@ class ImagePatchExtractor:
 
     def __write_array_to_png(self, image: np.ndarray , output_directory: str , prefix: str = None,  file_name: str = None , base36: int = None) -> None:
         """Writes the given numpy array into a `PNG` image and saves it into the specified directory, if file name is `None` then 
-                the file name will be the base64url encodings of sha256 of the provided image.  
+                the file name will be the base64url encodings of blake20 of the provided image.  
 
         :param image: The numpy array containing the values to be written into the `PNG` image
         :type image: ndarray
@@ -180,16 +181,17 @@ class ImagePatchExtractor:
         :type output_directory: str
         :param prefix: if not `None` then it's added as a prefix for the written file name. 
         :type prefix: str
-        :param file_name: The file name of the save image,if file name is `None` then the file name will be the base64url encodings of sha256 of the provided image.   
+        :param file_name: The file name of the save image,if file name is `None` then the file name will be the base64url encodings of blake20 of the provided image.   
         :type file_name: str
-        :param `base36`: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :param `base36`: Number of 1st N chars of base36 of the base64url of the blake20 of the image, if is set to `None` then nothing is applied.
         :type `base36`: int
         :returns: None
         :rtype: None
         """  
 
         if file_name is None: 
-            file_name = self.__base64url_encode(hashlib.sha256(image.tobytes()).hexdigest())
+            file_name = self.__base64url_encode(hashlib.blake2b(image.tobytes()).hexdigest())
+
 
             if base36 is not None: 
                 file_name = Base36.encode(file_name)
@@ -198,7 +200,12 @@ class ImagePatchExtractor:
         if prefix is not None: 
             file_name = prefix + file_name
         
-        Image.fromarray(image.astype(np.uint8)).save(os.path.join(output_directory , "{}.png".format(file_name))) 
+        #Checks if the file was already written before. 
+
+        if file_name not in self.written_files: 
+            #mark the file as it's already written 
+            self.written_files[file_name] = True 
+            Image.fromarray(image.astype(np.uint8)).save(os.path.join(output_directory , "{}.png".format(file_name))) 
         
         return  
         
@@ -341,7 +348,7 @@ class ImagePatchExtractor:
         :type `num_workers`: int
         :param `write_single_patches`: If True it write each patch as a single .png file otherwise it concatenates them as `output_png_size`. 
         :type `write_single_patches`: bool
-        :param `base36`: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+        :param `base36`: Number of 1st N chars of base36 of the base64url of the blake2b of the image, if is set to `None` then nothing is applied.
         :type `base36`: int
         :returns: None
         :rtype: None
@@ -408,7 +415,7 @@ def extract_patches_cli_tool(source_directory: str, output_directory: str, min_i
     :type `num_workers`: int
     :param `write_single_patches`: If True it write each patch as a single .png file otherwise it concatenates them as `output_png_size`. 
     :type `write_single_patches`: bool
-    :param `base36`: Number of 1st N chars of base36 of the base64url of the sha256 of the image, if is set to `None` then nothing is applied.
+    :param `base36`: Number of 1st N chars of base36 of the base64url of the blake2b of the image, if is set to `None` then nothing is applied.
     :type `base36`: int
     :returns: None
     :rtype: None
