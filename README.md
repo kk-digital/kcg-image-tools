@@ -36,7 +36,7 @@ Given a `source directory` containing images, the tool reads all the images in t
 
 For more info about the tool and usage instructions check this [link](image-dataset-preview)
 
-# ImageDatasetPreview
+# ImageDatasetInfo
 A standalone tool for obtaining the metadata of a given directory of images. 
 
 given a directory containing images, process all those images and write a file with the metadata (in current working directory)
