@@ -3,10 +3,11 @@
 Set of helping tools for cleaning image datasets and extracting patches from this set of images. 
 
 # Table of Contents
-There is currently 5 standalone tools in the project 
+There is currently 6 standalone tools in the project 
 - [ImagePatchExtractor](#ImagePatchExtractor)
 - [ImageDatasetCleaner](#ImageDatasetCleaner)
 - [ImageDatasetPreview](#ImageDatasetPreview)
+- [ImageDatasetInfo](#ImageDatasetInfo)
 - [IntegerEncoder](#IntegerEncoder)
 - [TileLerp](#tilelerp)
 
@@ -34,6 +35,14 @@ A standalone tool for image dataset preview.
 Given a `source directory` containing images, the tool reads all the images in this directory scale them down to a size provided from the user and then concatenates those scaled images into a matrix shaped image with those small images as elements, and those matrix images are saved in PNG formats in the `output_directory` provided by the user. 
 
 For more info about the tool and usage instructions check this [link](image-dataset-preview)
+
+# ImageDatasetInfo
+A standalone tool for obtaining the metadata of a given directory of images. 
+
+given a directory containing images, process all those images and write a file with the metadata (in current working directory)
+of those processed images, which are `image_path` , `image_name`, `image_blake2b_hash`, `image_size_bytes` , `image_dims_tuple`, `image_dims_string` and `unique_colors`. 
+
+For more info about the tool and usage instructions check this [link](image-dataset-info)
 
 
 # IntegerEncoder
