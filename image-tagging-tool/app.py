@@ -1,12 +1,13 @@
 import json
-from flask import Flask, render_template, url_for, request
+from flask import Flask, render_template, send_from_directory, url_for, request
 from utils import Utils
 from flask_cors import CORS
 import os 
 from urllib.parse import unquote
+import fire 
 
 #FIXME -> should set the folder to the images folder the user has set in the command line. 
-app = Flask(__name__, static_folder="static")
+app = Flask(__name__, template_folder='templates')
 CORS(app)
 
 #global variables their values should be passed by the user in the cli.  
@@ -14,11 +15,6 @@ images_folder = ""
 files_list = [] 
 N = 4 
 seed = None 
-
-# def get_images_sample(sample_size: int = 16, seed: int = None) -> list[str]: 
-#    """TODO docs 
-#    """
-#    return Utils.get_random_sample(files_list, sample_size, seed)
    
    
 #index of the web app. 
@@ -31,8 +27,14 @@ def index():
 
 #get random images urls to be sampled.
 
+@app.route('/taggingTool/api/getImages/<path:filename>')
+def get_images(filename): 
+   """TODO method docs.    
+   """
+   return send_from_directory(images_folder, unquote(filename), as_attachment=True)
+
 @app.route('/taggingTool/api/labelImages' , methods = ["POST"])
-def get_images():
+def label_images():
    """TODO 
    """
 
@@ -72,7 +74,7 @@ def get_images():
 
 
 
-def image_tagging_tool_cli(images_directory: str, grid_dim: int = 4, samples_seed: int = None) -> None: 
+def image_tagging_tool_cli(images_directory: str, user_name: str = "", grid_dim: int = 4, samples_seed: int = None) -> None: 
    """TODO docs. 
    """
    global images_folder 
@@ -88,10 +90,10 @@ def image_tagging_tool_cli(images_directory: str, grid_dim: int = 4, samples_see
    seed = samples_seed
    
    global username
-   username = "Mahmoud"
+   username = user_name
    
    app.run(debug = True)
    
 if __name__ == '__main__':
 
-   image_tagging_tool_cli("C:/Users/MahmoudSaudi/Documents/KCG/repo/image-tools/image-tagging-tool/app/static")
+   fire.Fire(image_tagging_tool_cli)
