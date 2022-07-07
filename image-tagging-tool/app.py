@@ -80,7 +80,7 @@ def label_images():
    username = request.json['username']
    
    #return a new list of images to the user to label. 
-   return render_template('index.html', images = Utils.get_random_sample(files_list, N * N), labels = tags, username = username)
+   return render_template('index.html', images = Utils.get_random_sample(files_list, N * N), labels = tags, username = username, active_label = label)
 
 
 
