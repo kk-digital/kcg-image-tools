@@ -2,10 +2,10 @@
 
 <ul>
     <li style="display: block; padding: 20px 30px;">
-        <h1>Labels</h1>
+        <h1>tasks</h1>
     </li>
     {% for label in labels %}
-    <li><a class="{{'active' if label.name == active_label}}" href="#{{label.name}}">{{label.name}}</a></li>
+    <li><a class="{{'active' if 'label-' + label.name ==  active_label}}" href="#{{label.name}}">label-{{label.name}}</a></li>
     {% endfor %}
 </ul>
 
