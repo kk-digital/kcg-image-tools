@@ -23,7 +23,7 @@ def index():
     """TODO docs 
     """
     #should send an initial sample.    
-    return render_template('index.html', images = Utils.get_random_sample(files_list , N * N), labels = [{'id': 0, 'name': 'good'}, {'id': 1, 'name': 'bad'}], username = username)
+    return render_template('index.html', images = Utils.get_random_sample(files_list , N * N), labels = tags, username = username)
 
 #get random images urls to be sampled.
 
@@ -39,26 +39,36 @@ def label_images():
    """
 
    #open and compute the hash of the images. 
-   print(request.json)
-   print(os.path.join(images_folder, os.path.basename(request.json['images'][0])))
-   images_metadata = [Utils.image_metadata(unquote(os.path.join(images_folder, os.path.basename(image_path))), 'sha256', request.json['username'], request.json['label']) for image_path in request.json['images']]
+   images_metadata = [Utils.image_metadata(images_folder, unquote(os.path.join(images_folder, os.path.basename(image_path))), 'sha256', request.json['username'], request.json['label']) for image_path in request.json['images']]
    
    #store the images metadata and labels sent by user inside json file. 
-   labeled_images = images_metadata 
+   labeled_images = {} 
+   
+   #if the json file storing the labels is not found then create it. 
+   if not os.path.isfile('./labeled_images.json'): 
+      json.dump(labeled_images, open('./labeled_images.json', 'w'), indent = 4)
    
    try: 
+      
       with open('./labeled_images.json', "r") as labels_file: 
+         #loads the json file into dict to update it with the new values. 
          labeled_images = json.load(labels_file)
-         labeled_images.extend(images_metadata)
+         #the label chosen by the user. 
+         label = request.json['label']
+         #Check if the tag is not already found in 
+         if label not in labeled_images: 
+            labeled_images[label] = {'tag_task': label, 'tag_data': []}
+         #update the tagged data. 
+         labeled_images[label]['tag_data'].extend(images_metadata)
+      
    except Exception as ex:   
       print(ex)    
       pass  
    
-   with open("./labeled_images.json", "w") as labels_files: 
-      json.dump(labeled_images, labels_files, indent = 4)
+   with open("./labeled_images.json", "w") as labels_file: 
+      json.dump(labeled_images, labels_file, indent = 4)
 
    #remove the labeled images from the files list. 
-   print(files_list)
    for image in request.json['images']: 
       #Make the path in the same format of paths in files_list variable. 
       image_path = {'url': unquote(os.path.basename(image))}
@@ -70,15 +80,18 @@ def label_images():
    username = request.json['username']
    
    #return a new list of images to the user to label. 
-   return render_template('index.html', images = Utils.get_random_sample(files_list, N * N), labels = [{'id': 0, 'name': 'good'}, {'id': 1, 'name': 'bad'}], username = username)
+   return render_template('index.html', images = Utils.get_random_sample(files_list, N * N), labels = tags, username = username)
 
 
 
-def image_tagging_tool_cli(images_directory: str, user_name: str = "", grid_dim: int = 4, samples_seed: int = None) -> None: 
+def image_tagging_tool_cli(images_dataset_directory: str, labels: list, grid_dim: int = 4, samples_seed: int = None) -> None: 
    """TODO docs. 
    """
    global images_folder 
-   images_folder = images_directory
+   images_folder = images_dataset_directory
+   
+   global tags
+   tags = [{'id': index, 'name': label} for index, label in enumerate(labels)]
    
    global files_list 
    files_list = Utils.get_files_list(images_folder)
@@ -90,7 +103,7 @@ def image_tagging_tool_cli(images_directory: str, user_name: str = "", grid_dim:
    seed = samples_seed
    
    global username
-   username = user_name
+   username = ""
    
    app.run(debug = True)
    
