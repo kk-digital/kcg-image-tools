@@ -1,5 +1,14 @@
 {% extends 'base.html' %} {% block head %}
-<title>Tagging tool</title>
+
+<ul>
+    <li style="display: block; padding: 20px 30px;">
+        <h1>Labels</h1>
+    </li>
+    {% for label in labels %}
+    <li><a class="{{'active' if label.name == active_label}}" href="#{{label.name}}">{{label.name}}</a></li>
+    {% endfor %}
+</ul>
+
 
 <div style="text-align: center;">
     <h2 style="text-align: center;">Image Tagging Tool</h2>
@@ -8,22 +17,22 @@
     <label for="username">Username</label>
     <input type="text" style="text-align: center;" id="username" value="{{username}}">
 </div>
-<hr>
+<!-- <hr> -->
 
 <div id="cover">
     {% for image in images %}
     <img width="100" height="120" src="{{ url_for('get_images', filename=image.url) }}"> {% endfor %}
 
     <div> <br>
-        <br> {% for label in labels %}
+        <!-- <br> {% for label in labels %}
         <div class="form-check form-check-inline">
             <input class="form-check-input" type="radio" name="labels" id="{{label.id}}" value="{{label.name}}">
             <label class="form-check-label" for="{{label.id}}">
           {{label.name}}
         </label>
         </div>
-        {% endfor %}
-        <button type="button" class="btn btn-success tag-images">Submit</button>
+        {% endfor %} -->
+        <button style="align-items: left" type="button" class="btn btn-success tag-images">Submit</button>
     </div>
 </div>
 
@@ -31,6 +40,7 @@
 <style>
     body {
         background-color: white;
+        /* margin: 0; */
     }
     
     #cover {
@@ -39,6 +49,7 @@
         margin: 0 auto;
         justify-content: center;
         align-items: center;
+        padding: 100;
     }
     
     #cover>img {
@@ -57,9 +68,44 @@
         box-shadow: 0px 12px 22px 1px rgb(98, 182, 250);
         border: 3px solid blue !important;
     }
+    /*Side bar styles */
+    
+    ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        width: 200px;
+        background-color: #f1f1f1;
+        position: fixed;
+        height: 100%;
+        overflow: auto;
+    }
+    
+    li a {
+        display: block;
+        color: #000;
+        padding: 8px 16px;
+        text-decoration: none;
+    }
+    
+    li a.active {
+        background-color: #2c6eca;
+        color: white;
+    }
+    
+    li a:hover:not(.active) {
+        background-color: #555;
+        color: white;
+    }
 </style>
 
 <script>
+    // change the highlight when choosing a certain label. 
+    $('a').click(function() {
+        $('.active').removeClass('active'); // removes the previous selected class
+        $(this).addClass('active'); // adds the class to the clicked tag
+    });
+
     $('img').click(function() {
         // $('.selected').removeClass('selected'); // removes the previous selected class
         $(this).toggleClass('selected'); // toggle the class that highlights the selected image. 
@@ -68,9 +114,9 @@
 
     $('.tag-images').click(function() {
         // get the chosen labels. 
-        var label = $("input[type='radio']").filter(":checked").val();
+        var label = $("a").filter(".active").text();
 
-        if (label === undefined) {
+        if (label === undefined || label == "") {
             alert("Please choose a label");
             return;
         }
