@@ -9,10 +9,9 @@ class Utils:
         pass
     
     @staticmethod
-    def image_metadata(image_path: str, hashing_type: str, username: str, label: str) -> str: 
+    def image_metadata(image_dataset_directory: str, image_path: str, hashing_type: str, username: str, label: str) -> str: 
         """TODO docs 
         """ 
-        print(image_path)
         metadata = {}
         #read the image, make sure it's not corrupted 
         try: 
@@ -21,24 +20,27 @@ class Utils:
             metadata = {
                 'username': username, 
                 'label': label, 
-                'hash_function': Utils.compute_hash(image.tobytes(), hashing_type), 
+                'hash_function': hashing_type, 
+                'image_hash': Utils.compute_hash(image.tobytes(), hashing_type), 
+                'image_dataset_directory': image_dataset_directory, 
                 'image_path': image_path, 
                 'image_name': os.path.splitext(os.path.basename(image_path))[0],
                 'image_size_bytes': os.stat(image_path).st_size, 
                 'image_dimensions': image.size, 
-                'image_resolution_x': image.size[0], 
-                'image_resolution_y': image.size[1], 
-                'date': str(datetime.datetime.now()), 
+                'tag_date': str(datetime.datetime.now()), 
+                'tag_date_unix': datetime.datetime.now().timestamp(), 
             }
             
         except Exception: 
             metadata = {
                 'username': username, 
                 'label': label, 
+                'image_dataset_directory': image_dataset_directory, 
                 'image_path': image_path, 
                 'image_name': os.path.splitext(os.path.basename(image_path))[0], 
                 'image_size_bytes': os.stat(image_path).st_size,
-                'date': str(datetime.datetime.now()), 
+                'tag_date': str(datetime.datetime.now()), 
+                'tag_date_unix': datetime.datetime.now().timestamp(), 
             } 
 
         return metadata
