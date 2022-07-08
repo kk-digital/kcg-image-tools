@@ -34,7 +34,7 @@ python src/to/dir/ImageTaggingTool.py --images_dataset_directory='path/to/my-ima
 Below you can see the shape of the web UI which can be accessed at http://localhost:5000 after running the tool.
 
 
-![image info](tagging-tool-index.png)
+![image info](tagging-tool-UI.png)
 
 <!-- Example Output 
 ```
