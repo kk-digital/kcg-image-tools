@@ -53,7 +53,6 @@ Example of `valid-images-metadata.json`
         ],
         "image_xsize": 38,
         "image_ysize": 135,
-        "image_dims_string": "38x135",
         "unique_colors": 16
     },
     {
