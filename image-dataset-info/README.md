@@ -47,11 +47,12 @@ Example of `valid-images-metadata.json`
         "image_name": "img1",
         "image_blake2b_hash": "e47eb1cf20d368f438c2adcfc128333efccf8324ec01ada9742b12989979192a31af8d0327de590e89b0a16e8940d2bb7b0e2e7f5830b7b42695090e5f993d13",
         "image_size_bytes": 3460,
-        "image_dims_tuple": [
+        "image_resolution": [
             38,
             135
         ],
-        "image_dims_string": "38x135",
+        "image_xsize": 38,
+        "image_ysize": 135,
         "unique_colors": 16
     },
     {
@@ -59,11 +60,12 @@ Example of `valid-images-metadata.json`
         "image_name": "img2",
         "image_blake2b_hash": "1ad883939d2a42cd747238a885814ba278b991a15805d5b47f1a6074b65116a87915e58c88d82a4dc33633a67c9db12dd9ecc15a309a0e5b5c2700be97d33fb9",
         "image_size_bytes": 131353,
-        "image_dims_tuple": [
+        "image_resolution": [
             800,
             608
         ],
-        "image_dims_string": "800x608",
+        "image_xsize": 800,
+        "image_ysize": 608,
         "unique_colors": 27
     },
 ]
