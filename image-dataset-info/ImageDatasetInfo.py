@@ -143,8 +143,9 @@ class ImageDatasetInfo:
                 'image_name': os.path.splitext(os.path.basename(image_path))[0], 
                 'image_blake2b_hash': self.__image_blake2b_hash(image), 
                 'image_size_bytes': os.stat(image_path).st_size, 
-                'image_dims_tuple': image.size, 
-                'image_dims_string': "{}x{}".format(image.size[0], image.size[1]), 
+                'image_resolution': image.size, 
+                'image_xsize': image.size[0], 
+                'image_ysize': image.size[1], 
                 'unique_colors': self.__count_unique_colors(image), 
             }
         except Exception: 
