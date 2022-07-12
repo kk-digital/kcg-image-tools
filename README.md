@@ -3,11 +3,12 @@
 Set of helping tools for cleaning image datasets and extracting patches from this set of images. 
 
 # Table of Contents
-There is currently 6 standalone tools in the project 
+There is currently 7 standalone tools in the project 
 - [ImagePatchExtractor](#ImagePatchExtractor)
 - [ImageDatasetCleaner](#ImageDatasetCleaner)
 - [ImageDatasetPreview](#ImageDatasetPreview)
 - [ImageDatasetInfo](#ImageDatasetInfo)
+- [ImageTaggingTool](#ImageTaggingTool)
 - [IntegerEncoder](#IntegerEncoder)
 - [TileLerp](#tilelerp)
 
@@ -43,6 +44,14 @@ given a directory containing images, process all those images and write a file w
 of those processed images, which are `image_path` , `image_name`, `image_blake2b_hash`, `image_size_bytes` , `image_dims_tuple`, `image_dims_string` and `unique_colors`. 
 
 For more info about the tool and usage instructions check this [link](image-dataset-info)
+
+
+# ImageTaggingTool
+A standalone tool for tagging image datasets.  
+
+given an image dataset directory and the tag tasks you need to apply for this dataset, the tool runs web UI can be accessed at  http://127.0.0.1:5000 with a grid of images taken from the image directory you have passed to be used for tagging depending on the task you choose, the tagged images metadata can be found in `data_output_directory` in `json` format.
+
+For more info about the tool and usage instructions check this [link](image-tagging-tool)
 
 
 # IntegerEncoder
