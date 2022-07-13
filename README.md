@@ -3,11 +3,12 @@
 Set of helping tools for cleaning image datasets and extracting patches from this set of images. 
 
 # Table of Contents
-There is currently 7 standalone tools in the project 
+There is currently 8 standalone tools in the project 
 - [ImagePatchExtractor](#ImagePatchExtractor)
 - [ImageDatasetCleaner](#ImageDatasetCleaner)
 - [ImageDatasetPreview](#ImageDatasetPreview)
 - [ImageDatasetInfo](#ImageDatasetInfo)
+- [ImageUniqueColors](#ImageUniqueColors)
 - [ImageTaggingTool](#ImageTaggingTool)
 - [IntegerEncoder](#IntegerEncoder)
 - [TileLerp](#tilelerp)
@@ -36,6 +37,15 @@ A standalone tool for image dataset preview.
 Given a `source directory` containing images, the tool reads all the images in this directory scale them down to a size provided from the user and then concatenates those scaled images into a matrix shaped image with those small images as elements, and those matrix images are saved in PNG formats in the `output_directory` provided by the user. 
 
 For more info about the tool and usage instructions check this [link](image-dataset-preview)
+
+# ImageUniqueColors
+A standalone tool calculating the unique colors in images. 
+
+Given a source directory the tool go through all the images inside the directory and counts the number of unique colors of each image and then prints a single line for each image contains the computed number of unique pixels and the image path separated by a `separator` and the number of unique pixels is fixed in output length. 
+
+The tool counts unique pixels in images of any type, so it works with `RGB`, `RGBA`, `gray scale` images or whatever.
+
+For more info about the tool and usage instructions check this [link](image-unique-colors)
 
 # ImageDatasetInfo
 A standalone tool for obtaining the metadata of a given directory of images. 
