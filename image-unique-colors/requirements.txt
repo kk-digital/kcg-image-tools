@@ -1,0 +1,12 @@
+certifi @ file:///C:/Windows/TEMP/abs_e9b7158a-aa56-4a5b-87b6-c00d295b01fanefpc8_o/croots/recipe/certifi_1655968940823/work/certifi
+dill==0.3.5.1
+fire==0.4.0
+multiprocess==0.70.13
+numpy==1.23.1
+pathos==0.2.9
+Pillow==9.2.0
+pox==0.3.1
+ppft==1.7.6.5
+six==1.16.0
+termcolor==1.1.0
+wincertstore==0.2
