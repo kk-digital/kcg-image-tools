@@ -2,6 +2,7 @@ import base64
 import multiprocessing
 import os 
 import shutil
+import time
 from typing_extensions import Self
 from PIL import Image
 import hashlib
@@ -50,18 +51,28 @@ class ImageDatasetCleaner:
         with open(os.path.join(folder_path , file_name), 'w') as json_file:
             json.dump(info , json_file , indent = 4)
     @staticmethod
-    def __decompress_file(compressed_file_path: str, output_path: str) -> None:
+    def __decompress_file(compressed_file_path: str, output_path: str, delete_after_decompression: bool = False) -> None:
         """decompress the content of compressed file into `rar`, `zip`, `gz` or any other file type as long it's supported on the os.
         
         :param compressed_file_path: The path for the compressed file to decompress.
         :type compressed_file_path: str
         :param output_path: the directory to save the result at. 
         :type output_path: str
+        :param delete_after_decompression: deletes the the compressed file after decompression if was set to True. 
+        :type delete_after_decompression: bool
         
         :returns: 
         :rtype: None
         """ 
+        #make sure the output dir is found or else create it. 
+        os.makedirs(output_path, exist_ok = True)
+
+        #extract the file 
         patoolib.extract_archive(compressed_file_path, outdir = output_path)
+        
+        #delete the compressed file after decompression if the user the flag was True.       
+        if delete_after_decompression:
+            os.remove(compressed_file_path)
 
 
     @staticmethod
@@ -221,10 +232,16 @@ class ImageDatasetCleaner:
         return file_name, new_file_name, image_info, failed_image, errors
     
     @staticmethod
-    def __clean_images(source_directory: str , output_directory: str, image_cleaner_instance: Self, allowed_formats = ['PNG' , 'JPEG'],
-                                min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024), base36: int = None, write_status_files: bool = False,  num_workers: int = 8) -> None: 
+    def clean_images(source_directory: str , output_directory: str, image_cleaner_instance: Self, allowed_formats = ['PNG' , 'JPEG'],
+                                min_size: tuple = (32 , 32) , max_size: tuple = (16 * 1024 , 16 * 1024), base36: int = None, write_status_files: bool = False,  num_workers: int = 8) -> None: 
         """ Given a source directory containing images, it applies some conditions and copies 
-                        the valid images into the `output_directory` 
+                        the valid images into the `output_directory` and two json files of the status of processed images 
+                        saved in the same output directory with names `failed-images.json` and `images-info.json` if `write_status_files` was set to True. 
+                
+            applied conditions are: 
+                1-Make sure if the image file is not corrupted
+                2-Checks if the image format is within the given allowed formats. 
+                3-Check if the image size is withing the range of `min size` and `max size` provided by the user. 
                         
         :param source_directory: The source directory containing the images to apply the conditions on 
         :type source_directory: str
@@ -295,86 +312,23 @@ class ImageDatasetCleaner:
         return 
 
     
-    def process_directory(self, source_directory: str,  output_directory: str, prefix_name: str, allowed_formats = ['PNG' , 'JPEG'],
-                                min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024), base36: int = None, write_status_files: bool = False, num_processes: int = multiprocessing.cpu_count(), num_threads: int = 8) -> None: 
-        """TODO docs. 
-        """
+    def process_compressed_files_dir(self, source_directory: str, prefix_name: str = "", clean_after_decompress: bool = True, compress_after_type: str = "zip", allowed_formats = ['PNG' , 'JPEG'],
+                                min_size: tuple = (32 , 32) , max_size: tuple = (16 * 1024 , 16 * 1024), base36: int = None, write_status_files: bool = False, num_processes: int = multiprocessing.cpu_count(), num_threads: int = 4) -> None: 
         
-        #get the list of all files in the source directory. 
-        files_list = ImageDatasetCleaner.__get_files_list(source_directory ,   recursive = True)
-        
-        #define the processes pool. 
-        pool = ProcessingPool(num_processes)
-        archives_count = 1 
-        to_archive_paths = [] 
-        
-        
-        
-        for file in files_list:
-            if ImageDatasetCleaner.__is_archive(file): 
-                #get the root path and the file name 
-                root_path, filename = os.path.split(file)
-                
-                #make the new folder path
-                decompressed_path = os.path.join(root_path, "TMP_{}_{}".format(prefix_name, str(archives_count).zfill(6)))
-                os.makedirs(decompressed_path, exist_ok = True)
-                to_archive_paths.append(decompressed_path)
-                archives_count += 1 
-
-                #decompress the file
-                ImageDatasetCleaner.__decompress_file(file, decompressed_path)
-                
-                #delete the compressed file. 
-                os.remove(file)
-
-
-        
-        #clean the images inside the zipped folder. 
-        save_folder_paths = [decompressed_path.replace("TMP_", "") for decompressed_path in to_archive_paths]
-
-        image_dataset_cleaner_instances = [] 
-        compressed_files_count = len(save_folder_paths)
-        
-        for _ in range(compressed_files_count): 
-            instance = ImageDatasetCleaner()
-            image_dataset_cleaner_instances.append(instance)
-        
-        #clean all decompressed folders. 
-        pool.map(ImageDatasetCleaner.__clean_images, to_archive_paths, save_folder_paths, image_dataset_cleaner_instances,
-                             ImageDatasetCleaner.__make_iterable_from_value(allowed_formats, compressed_files_count) , ImageDatasetCleaner.__make_iterable_from_value(min_size, compressed_files_count),
-                             ImageDatasetCleaner.__make_iterable_from_value(max_size, compressed_files_count),ImageDatasetCleaner.__make_iterable_from_value(base36, compressed_files_count),
-                             ImageDatasetCleaner.__make_iterable_from_value(write_status_files, compressed_files_count), ImageDatasetCleaner.__make_iterable_from_value(num_threads, compressed_files_count)),             
-        
-        
-        #remove decompressed folders after they were cleaned. 
-        for folder_path in to_archive_paths: 
-            shutil.rmtree(folder_path)
-        
-        #zip all decompressed folders. 
-        pool.map(ImageDatasetCleaner.__compress_folder, save_folder_paths, ["{}.zip".format(file) for file in save_folder_paths])
-
-        
-        for folder_path in save_folder_paths: 
-            shutil.rmtree(folder_path)
-        
-        #close the pool to avoid any errors.
-        pool.close()
-    
-def image_dataset_cleaner_cli(source_directory: str , output_directory: str = None, compressed_files_dir: bool = False, prefix_name: str = "", allowed_formats = ['PNG' , 'JPEG'],
-                                min_size: tuple = (32 , 32) , max_size = (16 * 1024 , 16 * 1024), base36: int = None, write_status_files: bool = False, num_processes: int = multiprocessing.cpu_count(), num_threads: int = 8) -> None: 
-        """ Given a source directory containing images, it applies some conditions and copies 
-                        the valid images into the `output_directory` and two json files of the status of processed images 
-                        saved in the same output directory with names `failed-images.json` and `images-info.json` if `write_status_files` was set to True. 
-                
-            applied conditions are: 
-                1-Make sure if the image file is not corrupted
-                2-Checks if the image format is within the given allowed formats. 
-                3-Check if the image size is withing the range of `min size` and `max size` provided by the user. 
+        """ Given  a source directory containing compressed files (with any type of compression) the function decompress these files,
+                use the cleaning tool to clean the decompressed directories, then compress the cleaned directories back again. 
                         
-        :param source_directory: The source directory containing the images to apply the conditions on 
+        :param source_directory: The source directory containing the compressed files.
         :type source_directory: str
-        :param output_directory: The directory to copy the images into it. 
-        :type output_directory: str
+        :param prefix_name: name of the prefix of the result compressed files, for example if `prefix_name = 'pixel_art'`, then the 
+            result files will be `pixel_art_000001`, `pixel_art_000002` ... etc, default it "" (empty string). 
+        :type prefix_name: str
+        :param clean_after_decompress: apply the image cleaning method to the output directories, default is `True` 
+        :type clean_after_decompress: bool
+        
+        :param compress_after_type: the compression type of the result directories, if was set to None then 
+                    it doesn't compress the result at all. 
+        :type compress_after_type: str
         :param allowed_formats: list of the allowed image formats to be considered in the copied folder Formats MUST be in Capilat letters.
         :type allowed_formats: list
         :param min_size: min target image size (if the image is less than it then it's ignored and not copied). 
@@ -387,26 +341,142 @@ def image_dataset_cleaner_cli(source_directory: str , output_directory: str = No
                     `failed-images.json` and `images-info.json` in the same directory, default is `False`
         :type write_status_files: bool
         
-        :param num_workers: number of workers (threads) to be used in the process, default value is `8`. 
-        :type num_workers: int
+        :param num_processes: number of process/cores to use, default value is the number of available cores in the processor. 
+        :type num_processes: int
+        :param num_threads: number of workers (threads) to be used in each process, default value is `4`. 
+        :type num_threads: int
+        
         :returns: None
         :rtype: None
         """
         
-        dataset_cleaner = ImageDatasetCleaner()
-        if compressed_files_dir is True: 
-            dataset_cleaner.process_directory(source_directory , output_directory , prefix_name, allowed_formats,
-                                              min_size , max_size ,base36, write_status_files, num_processes, num_threads)
-        else: 
+        #get the list of all files in the source directory. 
+        files_list = ImageDatasetCleaner.__get_files_list(source_directory ,   recursive = True)
+        
+        #define the processes pool. 
+        pool = ProcessingPool(num_processes)
+        to_archive_paths = [] 
+        
+        
+        
+        #get all compressed files.
+        compressed_files = [file for file in files_list if ImageDatasetCleaner.__is_archive(file)]
+        
+        #get all decompressed files names 
+        decompressed_paths = [os.path.join(os.path.split(compressed_path)[0], "TMP_{}_{}".format(prefix_name, str(idx + 1).zfill(6))) for idx, compressed_path in enumerate(compressed_files)]
+        
+        #decompress all files. 
+        pool.map(ImageDatasetCleaner.__decompress_file, compressed_files, decompressed_paths,
+                 ImageDatasetCleaner.__make_iterable_from_value(True, len(compressed_files)))
+        
+        
+        ###clean the images inside the zipped folder if the flag was set to True. 
+        
+        if clean_after_decompress is True: 
+            #make new folders for cleaned images. 
+            save_folder_paths = [decompressed_path.replace("TMP_", "") for decompressed_path in decompressed_paths]
+
+            #define instance of the cleaner class to use in cleaning images. 
+            compressed_files_count = len(save_folder_paths)
+            image_dataset_cleaner_instances = [ImageDatasetCleaner() for _ in range(compressed_files_count)] 
             
-            if output_directory is None: 
-                raise FileNotFoundError("Please provide a valid output directory")
+            #clean all decompressed folders. 
+            pool.map(ImageDatasetCleaner.clean_images, decompressed_paths, save_folder_paths, image_dataset_cleaner_instances,
+                                ImageDatasetCleaner.__make_iterable_from_value(allowed_formats, compressed_files_count) , ImageDatasetCleaner.__make_iterable_from_value(min_size, compressed_files_count),
+                                ImageDatasetCleaner.__make_iterable_from_value(max_size, compressed_files_count),ImageDatasetCleaner.__make_iterable_from_value(base36, compressed_files_count),
+                                ImageDatasetCleaner.__make_iterable_from_value(write_status_files, compressed_files_count), ImageDatasetCleaner.__make_iterable_from_value(num_threads, compressed_files_count)),             
             
-            #clean main folder. 
-            ImageDatasetCleaner.__clean_images(source_directory, output_directory, ImageDatasetCleaner(), 
-                                            allowed_formats, min_size, max_size, base36, write_status_files, num_threads)
+            
+            #remove decompressed folders after they were cleaned. 
+            [shutil.rmtree(folder_path) for folder_path in decompressed_paths]
+
+        if compress_after_type is not None: 
+            
+            to_compress = decompressed_paths
+            #compress all cleaned decompressed folders. 
+            if clean_after_decompress is True: 
+                to_compress = save_folder_paths
+                
+            pool.map(ImageDatasetCleaner.__compress_folder, to_compress, ["{}.{}".format(file.replace("TMP", ""), compress_after_type.lower().replace('.', '')) for file in to_compress])
+            #remove cleaned decompressed folders after they were zipped. 
+            [shutil.rmtree(folder_path) for folder_path in to_compress]
+
+
+        #close the pool to avoid any errors.
+        pool.close()
+
+
+def image_dataset_cleaner_cli(source_directory: str, output_directory: str = None, compressed_files_dir: bool = False, prefix_name: str = "", clean_after_decompress: bool = True, compress_after_type: str = "zip", allowed_formats = ['PNG' , 'JPEG'],
+                                min_size: tuple = (32 , 32) , max_size: tuple = (16 * 1024 , 16 * 1024), base36: int = None, write_status_files: bool = False, num_processes: int = multiprocessing.cpu_count(), num_threads: int = 4) -> None: 
+    """ Given a source directory containing images or compressed files depending on the value of the flag `compressed_files_dir`
+            the tool applies certain conditions,
+
+        if `compressed_files_dir` is `False`
+            the tool applies some conditions and copies the valid images into the `output_directory` and two json files of the status of processed images 
+            saved in the same output directory with names `failed-images.json` and `images-info.json` if `write_status_files` was set to True. 
+            
+            applied conditions are: 
+                1-Make sure if the image file is not corrupted
+                2-Checks if the image format is within the given allowed formats. 
+                3-Check if the image size is withing the range of `min size` and `max size` provided by the user. 
+        
+        if `compressed_file_dir` is `True` 
+            Given  a source directory containing compressed files (with any type of compression) the tool decompress these files,
+             apply the conditions stated above to the images if `clean_after_decompress` is `True`,
+             then compress the cleaned directories back again if `compress_after_type` was set and is not `None`.
+    
+    :param source_directory: The source directory containing the files to apply the conditions on 
+    :type source_directory: str
+    :param output_directory: The directory to copy the cleaned images to it in case `compressed_files_dir` was set to `False`
+    :type output_directory: str
+    :param compressed_files_dir: if `True` process a the compressed files inside a directory, otherwise clean the images inside
+            the given `source_directory`, default is `False`. 
+    :type compressed_files_dir: bool
+    
+    :param prefix_name: name of the prefix of the result compressed files, for example if `prefix_name = 'pixel_art'`, then the 
+        result files will be `pixel_art_000001`, `pixel_art_000002` ... etc, default it "" (empty string). 
+    :type prefix_name: str
+    :param clean_after_decompress: apply the image cleaning method to the output directories, default is `True` 
+    :type clean_after_decompress: bool
+    
+    :param compress_after_type: the compression type of the result directories, if was set to None then 
+                it doesn't compress the result at all. 
+    :type compress_after_type: str
+    :param allowed_formats: list of the allowed image formats to be considered in the copied folder Formats MUST be in Capilat letters.
+    :type allowed_formats: list
+    :param min_size: min target image size (if the image is less than it then it's ignored and not copied). 
+    :type min_size: tuple
+    :param max_size: max target image size (if the image is larger than it then it's ignored and not copied). 
+    :type max_size: tuple
+    :param base36: Number of 1st N chars of base36 of the base64url of the blake2b of the image, if is set to `None` then nothing is applied.
+    :type base36: int
+    :param write_status_files: if `True` the tool writes the status of the processed images in two files 
+                `failed-images.json` and `images-info.json` in the same directory, default is `False`
+    :type write_status_files: bool
+    
+    :param num_processes: number of process/cores to use, default value is the number of available cores in the processor. 
+    :type num_processes: int
+    :param num_threads: number of workers (threads) to be used in each process, default value is `4`. 
+    :type num_threads: int
+    
+    :returns: None
+    :rtype: None
+    """
+        
+    dataset_cleaner = ImageDatasetCleaner()
+    if compressed_files_dir is True: 
+        dataset_cleaner.process_compressed_files_dir(source_directory, prefix_name,  clean_after_decompress, compress_after_type, allowed_formats,
+                                            min_size, max_size, base36, write_status_files, num_processes, num_threads)
+    else: 
+        
+        if output_directory is None: 
+            raise ChildProcessError("Please provide a valid output directory")
+        
+        #clean main folder. 
+        ImageDatasetCleaner.clean_images(source_directory, output_directory, ImageDatasetCleaner(), 
+                                        allowed_formats, min_size, max_size, base36, write_status_files, num_threads)
 
 
 if __name__ == "__main__": 
-        
+    
     fire.Fire(image_dataset_cleaner_cli)
