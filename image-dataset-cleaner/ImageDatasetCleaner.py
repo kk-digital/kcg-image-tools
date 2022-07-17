@@ -406,12 +406,12 @@ class ImageDatasetCleaner:
         pool.close()
 
 
-def image_dataset_cleaner_cli(source_directory: str, output_directory: str = None, compressed_files_dir: bool = False, prefix_name: str = "", clean_after_decompress: bool = True, compress_after_type: str = "zip", allowed_formats = ['PNG' , 'JPEG'],
+def image_dataset_cleaner_cli(source_directory: str, output_directory: str = None, process_archive_directory: bool = False, prefix_name: str = "", clean_after_decompress: bool = True, compress_after_type: str = "zip", allowed_formats = ['PNG' , 'JPEG'],
                                 min_size: tuple = (32 , 32) , max_size: tuple = (16 * 1024 , 16 * 1024), base36: int = None, write_status_files: bool = False, num_processes: int = multiprocessing.cpu_count(), num_threads: int = 4) -> None: 
-    """ Given a source directory containing images or compressed files depending on the value of the flag `compressed_files_dir`
+    """ Given a source directory containing images or compressed files depending on the value of the flag `process_archive_directory`
             the tool applies certain conditions,
 
-        if `compressed_files_dir` is `False`
+        if `process_archive_directory` is `False`
             the tool applies some conditions and copies the valid images into the `output_directory` and two json files of the status of processed images 
             saved in the same output directory with names `failed-images.json` and `images-info.json` if `write_status_files` was set to True. 
             
@@ -427,11 +427,11 @@ def image_dataset_cleaner_cli(source_directory: str, output_directory: str = Non
     
     :param source_directory: The source directory containing the files to apply the conditions on 
     :type source_directory: str
-    :param output_directory: The directory to copy the cleaned images to it in case `compressed_files_dir` was set to `False`
+    :param output_directory: The directory to copy the cleaned images to it in case `process_archive_directory` was set to `False`
     :type output_directory: str
-    :param compressed_files_dir: if `True` process a the compressed files inside a directory, otherwise clean the images inside
+    :param process_archive_directory: if `True` process a the compressed files inside a directory, otherwise clean the images inside
             the given `source_directory`, default is `False`. 
-    :type compressed_files_dir: bool
+    :type process_archive_directory: bool
     
     :param prefix_name: name of the prefix of the result compressed files, for example if `prefix_name = 'pixel_art'`, then the 
         result files will be `pixel_art_000001`, `pixel_art_000002` ... etc, default it "" (empty string). 
@@ -464,7 +464,7 @@ def image_dataset_cleaner_cli(source_directory: str, output_directory: str = Non
     """
         
     dataset_cleaner = ImageDatasetCleaner()
-    if compressed_files_dir is True: 
+    if process_archive_directory is True: 
         dataset_cleaner.process_compressed_files_dir(source_directory, prefix_name,  clean_after_decompress, compress_after_type, allowed_formats,
                                             min_size, max_size, base36, write_status_files, num_processes, num_threads)
     else: 

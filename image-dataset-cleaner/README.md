@@ -3,9 +3,9 @@
 
 ## Tool Description
 
-Given a source directory containing images or compressed files depending on the value of the flag `compressed_files_dir` the tool applies certain conditions,
+Given a source directory containing images or compressed files depending on the value of the flag `process_archive_directory` the tool applies certain conditions,
 
-if `compressed_files_dir` is `False` the tool applies some conditions and copies the valid images into the `output_directory` and two json files of the status of processed images saved in the same output directory with names `failed-images.json` and `images-info.json` if `write_status_files` was set to True. 
+if `process_archive_directory` is `False` the tool applies some conditions and copies the valid images into the `output_directory` and two json files of the status of processed images saved in the same output directory with names `failed-images.json` and `images-info.json` if `write_status_files` was set to True. 
             
 applied conditions are: 
 - Make sure if the image file is not corrupted
@@ -29,8 +29,8 @@ pip install -r src/to/dir/requirements.txt
 ## CLI Parameters
 
 * `source_directory` _[string]_ - _[required]_ - The source directory containing the files to apply the conditions on.
-* `output_directory` _[string]_ - _[optional]_ - The directory to copy the cleaned images to it in case `compressed_files_dir` was set to `False`, default is `None`
-* `compressed_files_dir` _[bool]_ - _[optional]_ - if `True` process a the compressed files inside a directory, otherwise clean the images inside the given `source_directory`, default is `False`. 
+* `output_directory` _[string]_ - _[optional]_ - The directory to copy the cleaned images to it in case `process_archive_directory` was set to `False`, default is `None`
+* `process_archive_directory` _[bool]_ - _[optional]_ - if `True` process a the compressed files inside a directory, otherwise clean the images inside the given `source_directory`, default is `False`. 
 
 * `prefix_name` _[string]_ - _[optional]_ - name of the prefix of the result compressed files, for example if `prefix_name = 'pixel_art'`, then the result files will be `pixel_art_000001`, `pixel_art_000002` ... etc, default it "" (empty string).
 
@@ -111,7 +111,7 @@ Example of `failed-images.json`
 ## Clean Directory of Compressed Files. 
 
 ```sh
-python src/to/dir/ImageDatasetCleaner.py --source_directory = './my-compressed-files-dir' --compressed_files_dir --prefix_name="pixel_art"
+python src/to/dir/ImageDatasetCleaner.py --process_archive_directory  --source_directory='./my-compressed-files-dir' --prefix_name="pixel_art"
 ```
 
 
