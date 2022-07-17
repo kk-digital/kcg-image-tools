@@ -3,16 +3,16 @@
 
 ## Tool Description
 
-Given a source directory containing images or compressed files depending on the value of the flag `process_archive_directory` the tool applies certain conditions,
+Given a source directory containing images or compressed files the tool used to clean the images inside the directory or the compressed files as the following: 
 
-if `process_archive_directory` is `False` the tool applies some conditions and copies the valid images into the `output_directory` and two json files of the status of processed images saved in the same output directory with names `failed-images.json` and `images-info.json` if `write_status_files` was set to True. 
+if `process_archive_directory` == `False` the tool applies some conditions and copies the valid images into the `output_directory` and two json files of the status of processed images saved in the same output directory with names `failed-images.json` and `images-info.json` if `write_status_files` was set to True. 
             
 applied conditions are: 
 - Make sure if the image file is not corrupted
 - Checks if the image format is within the given allowed image formats (codecs) provided as an option to the cli defaults are `JPEG` and `PNG` only 
 - Check if the image size is withing the range of `min size` and `max size` provided by the user as an option defaults are `(32,32)` for `min size` and `(16384,16384)` for `max size`
         
-if `compressed_file_dir` is `True` Given  a source directory containing compressed files (with any type of compression) the tool applies the following steps. 
+if `process_archive_directory` == `True` Given  a source directory containing compressed files (with any type of compression) the tool applies the following steps. 
 
 - decompress these files.
 - apply the conditions stated above (in validating images part) to the images if `clean_after_decompress` is `True`,
@@ -110,9 +110,43 @@ Example of `failed-images.json`
 
 ## Clean Directory of Compressed Files. 
 
+if `process_archive_directory` == `True` Given  a source directory containing compressed files (with any type of compression) the tool applies the following steps. 
+
+- decompress these files.
+- apply the conditions stated above (in validating images part) to the images if `clean_after_decompress` is `True`,
+- compress the cleaned directories back again if `compress_after_type` was set and is not `None`.
+
+### Clean files After Decompression 
+
+
 ```sh
 python src/to/dir/ImageDatasetCleaner.py --process_archive_directory  --source_directory='./my-compressed-files-dir' --prefix_name="pixel_art"
 ```
 
 
-After the above command the tool will start working, to process the compressed files, cleans them, then compress them back again into `ZIP` format, you can change the applied steps using the `CLI` options described above. 
+After the above command the tool will start working, to process the compressed files, cleans them, then compress them back again into `ZIP` format, so the compressed files inside the `source_directory` will be replaced with cleaned compressed `ZIP` files. 
+
+### Don't Clean files After Decompression. 
+
+```sh
+python src/to/dir/ImageDatasetCleaner.py --process_archive_directory --clean_after_decompress=False --source_directory='./my-compressed-files-dir' --prefix_name="pixel_art"
+```
+
+
+After the above command the tool will start working, to process the compressed files, and then just compress the files back into `ZIP` format. 
+
+### Choose Certain Compression Format 
+
+```sh
+python src/to/dir/ImageDatasetCleaner.py --process_archive_directory --compress_after_type="rar" --source_directory='./my-compressed-files-dir' --prefix_name="pixel_art"
+```
+
+After the above command the tool will start working, to process the compressed files, cleans the images inside the decompressed folders, and when compressing the cleaned folders back it will compress them in `RAR` format instead default compression format which is `ZIP` format.
+
+ ### Don't Compress Back the Result 
+
+```sh
+python src/to/dir/ImageDatasetCleaner.py --process_archive_directory --compress_after_type=None --source_directory='./my-compressed-files-dir' --prefix_name="pixel_art"
+```
+
+After the above command the tool will start working, to process the compressed files, cleans the images inside the decompressed folders and doesn't compress the result back like the above examples.
