@@ -19,6 +19,8 @@ pip install -r src/to/dir/requirements.txt
 
 * `data_output_directory` _[string]_ - _[required]_ the directory to write the resultant `json` files inside, the `json` files contains the tagged images metadata.
 
+* `dictionary_path` _[string]_ - _[optional]_ path to the dictionary to be used in tagging the `Aesthetic scores` task. 
+
 * `grid_dim` _[int]_ - _[optional]_ -  the dimension of the grid displaying the images, the grid is a square default dim is `4`. 
 
 * `samples_seed` _[int]_ - _[optional]_ -   seed of the pseudo random generator generating the sample images generated to be displayed in the grid, default is `None`. 
