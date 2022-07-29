@@ -14,24 +14,34 @@ class Utils:
     def __init__(self, dictionary_path: str = None) -> None:
         
         #initiate the dictionary 
-        self.dictionary_words = {} 
+        dictionary_words = {} 
         
         #if the dictionary file path was provided.
-        if os.path.isfile(dictionary_path): 
+        if dictionary_path is not None and os.path.isfile(dictionary_path): 
             self.dictionary_words = self.__txt_dictionary_to_dict(dictionary_path)
         
-        self.autocomplete = AutoComplete(words = self.dictionary_words)
+        self.autocomplete = AutoComplete(words = dictionary_words)
         
         pass 
     
     
-    def get_all_dictionary(self): 
-        """TODO docs 
+    def get_all_dictionary(self) -> list[str]: 
+        """ method to get all words in the dictionary as a list.  
+        
+        :returns: a list containing all words in the dictionary. 
+        :rtype: list[str]
         """
-        return [word for word in self.dictionary_words]
+        return [word for word in self.autocomplete.words]
 
     def __txt_dictionary_to_dict(self, dictionary_path: str) -> dict :
-        """ TODO docs 
+        """ given the path of text file dictionary containing a word per each line, the method reads it and returns 
+            the dictionary as python dict data structure.
+        
+        :param dictionary_path: the path to the text dictionary to extract its words. 
+        :type dictionary_path: str
+        
+        :returns: the dictionary in dict format with each word as a key. 
+        :rtype: dict 
         """
         
         #open dictionary file given the path 
@@ -41,15 +51,26 @@ class Utils:
             return {line.rstrip(): {} for line in lines} 
     
     
-    def _auto_complete(self, pattern) -> str: 
-        """TODO docs 
-        """
+    def _auto_complete(self, pattern: str) -> list[str]: 
+        """method to auto complete a pattern to the nearest match from the provided dictionary. 
         
+        :param pattern: the pattern to predict its nearest match from the dictionary. 
+        :type pattern: str
+        
+        :returns: a list of the most matched words for the given pattern (the max length of the list is 5).
+        :rtype: list[str]
+        """
         return [word[0] for word in self.autocomplete.search(word = pattern, size = 5)]
 
     
     def _is_word_in_dictionary(self, word: str) -> bool: 
-        """TODO docs 
+        """check if the given word is found in the dictionary.
+        
+        :param word: thw word to check if found in the dictionary.  
+        :type word: str
+        
+        :returns: `True` if the word is found and `False` otherwise. 
+        :rtype: bool
         """
     
         return word in self.autocomplete.words
@@ -181,10 +202,4 @@ class Utils:
         
 
 if __name__ == "__main__":
-    
-    instance = Utils('C:/Users/MahmoudSaudi/Documents/KCG/repo/image-tools/dictionary.txt')
-    
-    print(instance._auto_complete('h'))
-    
-    print(instance._is_word_in_dictionary("hola"))
-    
+    pass     

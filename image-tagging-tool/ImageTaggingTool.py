@@ -107,7 +107,7 @@ def label_images():
 
 
 
-def image_tagging_tool_cli(images_dataset_directory: str, tag_tasks: list, data_output_directory: str,  grid_dim: int = 4, samples_seed: int = None) -> None: 
+def image_tagging_tool_cli(images_dataset_directory: str, tag_tasks: list, data_output_directory: str, dictionary_path: str = None,  grid_dim: int = 4, samples_seed: int = None) -> None: 
    """ given an image dataset directory and the tag tasks you need to apply for this dataset, the tool runs web UI can be found at 
          http://127.0.0.1:5000 with a grid of images taken from the image directory you have passed to be used for tagging depending 
             on the task you choose, the tagged images metadata can be found inside the `data_output_directory` as `json` files. 
@@ -118,6 +118,8 @@ def image_tagging_tool_cli(images_dataset_directory: str, tag_tasks: list, data_
    :type tag_tasks: list
    :param data_output_directory: the directory to write the resultant `json` files inside, the `json` files contains the tagged images metadata.
    :type data_output_directory: str
+   :param dictionary_path: path to the dictionary to be used in tagging the `Aesthetic scores` task. 
+   :type dictionary_path: str
    :param grid_dim: the dimension of the grid displaying the images, the grid is a square default dim is `4`. 
    :type grid_dim: int
    :param samples_seed: seed of the pseudo random generator generating the sample images generated to be displayed in the grid, default is `None`
@@ -151,7 +153,7 @@ def image_tagging_tool_cli(images_dataset_directory: str, tag_tasks: list, data_
    
    global utils 
    
-   utils = Utils('C:/Users/MahmoudSaudi/Documents/KCG/repo/image-tools/dictionary.txt')
+   utils = Utils(dictionary_path)
    app.run(debug = True)
    
 if __name__ == '__main__':
