@@ -4,13 +4,57 @@ import random
 from PIL import Image
 import datetime
 import mimetypes
+from fast_autocomplete import AutoComplete
 
 
 mimetypes.init()
 
+
 class Utils: 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, dictionary_path: str = None) -> None:
+        
+        #initiate the dictionary 
+        self.dictionary_words = {} 
+        
+        #if the dictionary file path was provided.
+        if os.path.isfile(dictionary_path): 
+            self.dictionary_words = self.__txt_dictionary_to_dict(dictionary_path)
+        
+        self.autocomplete = AutoComplete(words = self.dictionary_words)
+        
+        pass 
+    
+    
+    def get_all_dictionary(self): 
+        """TODO docs 
+        """
+        return [word for word in self.dictionary_words]
+
+    def __txt_dictionary_to_dict(self, dictionary_path: str) -> dict :
+        """ TODO docs 
+        """
+        
+        #open dictionary file given the path 
+        with open(dictionary_path) as txt_dictionary: 
+            #read the text file line by line (each word is in a single line). 
+            lines = txt_dictionary.readlines()
+            return {line.rstrip(): {} for line in lines} 
+    
+    
+    def _auto_complete(self, pattern) -> str: 
+        """TODO docs 
+        """
+        
+        return [word[0] for word in self.autocomplete.search(word = pattern, size = 5)]
+
+    
+    def _is_word_in_dictionary(self, word: str) -> bool: 
+        """TODO docs 
+        """
+    
+        return word in self.autocomplete.words
+
+    
     
     @staticmethod
     def image_metadata(image_dataset_directory: str, image_path: str, username: str, label: str, hashing_type: str = 'sha256') -> dict: 
@@ -134,3 +178,13 @@ class Utils:
             return hashlib.sha256(object).hexdigest()
         else: 
             raise Exception("{} hashing type is not found only blake2b & sha256 are supported.")
+        
+
+if __name__ == "__main__":
+    
+    instance = Utils('C:/Users/MahmoudSaudi/Documents/KCG/repo/image-tools/dictionary.txt')
+    
+    print(instance._auto_complete('h'))
+    
+    print(instance._is_word_in_dictionary("hola"))
+    

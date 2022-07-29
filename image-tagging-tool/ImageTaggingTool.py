@@ -11,6 +11,7 @@ app = Flask(__name__, template_folder='templates')
 #allow cors requests. 
 CORS(app)
 
+utils = None 
 #global variables their values should be passed by the user in the cli.  
 images_folder = "" 
 files_list = [] 
@@ -24,10 +25,23 @@ def index():
     """returns the index page of the tool and generates a random sample of images to start with. 
     """
     #should send an initial sample.    
-    return render_template('index.html', images = Utils.get_random_sample(files_list , N * N), labels = tags, username = username)
+    return render_template('index.html', aesthetic_score_image = Utils.get_random_sample(files_list, 1)[0], images = Utils.get_random_sample(files_list , N * N), labels = tags, username = username, predicted_tags = utils.get_all_dictionary())
 
-#get random images urls to be sampled.
 
+@app.route('/taggingTool/api/checkTag')
+def check_if_tag_found(): 
+   """endpoint to check if a certain tag is found in the dictionary (in the dictionary.txt file)
+   """
+   return utils._is_word_in_dictionary(request.json['tag'])
+
+@app.route('/taggingTool/api/predictTag')
+def predict_tag_from_pattern(): 
+   """endpoint to make a prediction from a given pattern based on the given dictionary.
+   """
+   return utils._auto_complete(request.json['pattern'])
+
+
+#get random images urls to be sampled
 @app.route('/taggingTool/api/getImages/<path:filename>')
 def get_images(filename): 
    """endpoint to serve the images from the image dataset folder given the image file name as a param.  
@@ -41,8 +55,13 @@ def label_images():
       the endpoint computes the selected images metadata and stores them inside a json file within the same path. 
    """
    #open and compute the hash of the images. 
-   images_metadata = [Utils.image_metadata(images_folder, unquote(os.path.join(images_folder, os.path.basename(image_path))), 'sha256', request.json['username'], request.json['label']) for image_path in request.json['images']]
+   images_metadata = [Utils.image_metadata(images_folder, unquote(os.path.join(images_folder, os.path.basename(image_path))), request.json['username'], request.json['label'], 'sha256') for image_path in request.json['images']]
    
+   
+   if request.json['task'] == 'aesthetic-score': 
+      images_metadata[0]['score'] = int(request.json['score'])
+      images_metadata[0]['img_tag'] = request.json['img_tag']
+      
    #store the images metadata and labels sent by user inside json file. 
    labeled_images = {} 
    
@@ -84,7 +103,7 @@ def label_images():
    username = request.json['username']
    
    #return a new list of images to the user to label. 
-   return render_template('index.html', images = Utils.get_random_sample(files_list, N * N), labels = tags, username = username, active_label = label)
+   return render_template('index.html', aesthetic_score_image = Utils.get_random_sample(files_list, 1)[0], images = Utils.get_random_sample(files_list, N * N), labels = tags, username = username, active_label = label,  predicted_tags = utils.get_all_dictionary())
 
 
 
@@ -130,6 +149,9 @@ def image_tagging_tool_cli(images_dataset_directory: str, tag_tasks: list, data_
    global username
    username = ""
    
+   global utils 
+   
+   utils = Utils('C:/Users/MahmoudSaudi/Documents/KCG/repo/image-tools/dictionary.txt')
    app.run(debug = True)
    
 if __name__ == '__main__':

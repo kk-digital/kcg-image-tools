@@ -186,6 +186,7 @@ def image_dataset_preview_cli(source_directory: str, output_directory: str,  ima
     preview_dataset.preview_image_dataset(source_directory , output_directory, image_size, matrix_size, color_mode, images_order_mode, base36, num_workers)
 
     print("Process took {} seconds to execute".format(time.time() - start))
+
 if __name__ == "__main__":     
     warnings.filterwarnings("ignore")
 

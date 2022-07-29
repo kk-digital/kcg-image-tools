@@ -1,0 +1,7 @@
+Car
+Boat
+Truck 
+Ship 
+House 
+jewelry
+Person
