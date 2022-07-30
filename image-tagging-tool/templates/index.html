@@ -51,14 +51,26 @@
         <button class="score-button">2</button>
     </div>
 
-    <input class="score-image-tag" style="margin: 5% 30%;" type="search" list="tag-name" placeholder="Choose a tag name">
+    <div style="margin-top: 5%; margin-left: 0%;" class="row">
+        <div class="col">
+            <multi-input>
+                <input class="score-image-tag" type="search" list="tag-name" placeholder="Choose a tag name">
+                <datalist id="tag-name">
+                    {% for predicted in predicted_tags %}
+                    <option value="{{predicted}}" />{% endfor %}
+                </datalist>
+            </multi-input>
 
-    <datalist id="tag-name">
-        {% for predicted in predicted_tags %}
-        <option value="{{predicted}}" />{% endfor %}
-    </datalist>
+        </div>
 
-    <button type="button" class="btn btn-success submit-aesthetic-score">Submit</button>
+        <!-- <div class="col">
+            <button style="margin-left: -55%; width: 60px; height: 40px;" type="button" class="btn btn-primary">tag</button>
+            <p id="values"></p>
+        </div> -->
+
+    </div>
+
+    <button style="margin-top: 15%;" type="button" class="btn btn-success submit-aesthetic-score">Submit</button>
 
 </div>
 
@@ -240,9 +252,9 @@
             return;
         }
 
-        var img_tag = $('.score-image-tag').val();
-
-        if (img_tag.length == 0) {
+        var img_tags = document.querySelector('multi-input').getValues();
+        console.log(img_tags);
+        if (img_tags.length == 0) {
             alert("Please select a tag");
             return;
         }
@@ -264,7 +276,7 @@
                 'label': 'aesthetic-scores',
                 'images': [$('.aesthetic-image').attr('src')],
                 'score': score,
-                'img_tag': img_tag,
+                'img_tags': img_tags,
                 'username': username,
             }),
             success: function(response) {

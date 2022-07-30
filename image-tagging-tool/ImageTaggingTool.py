@@ -7,7 +7,7 @@ from urllib.parse import unquote
 import fire 
 
 #start the Flask app and define the templates folder path. 
-app = Flask(__name__, template_folder='templates')
+app = Flask(__name__, static_folder='./templates/lib', template_folder='templates')
 #allow cors requests. 
 CORS(app)
 
@@ -60,7 +60,7 @@ def label_images():
    
    if request.json['task'] == 'aesthetic-score': 
       images_metadata[0]['score'] = int(request.json['score'])
-      images_metadata[0]['img_tag'] = request.json['img_tag']
+      images_metadata[0]['img_tags'] = request.json['img_tags']
       
    #store the images metadata and labels sent by user inside json file. 
    labeled_images = {} 
@@ -154,6 +154,7 @@ def image_tagging_tool_cli(images_dataset_directory: str, tag_tasks: list, data_
    global utils 
    
    utils = Utils(dictionary_path)
+
    app.run(debug = True)
    
 if __name__ == '__main__':

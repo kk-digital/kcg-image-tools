@@ -18,7 +18,7 @@ class Utils:
         
         #if the dictionary file path was provided.
         if dictionary_path is not None and os.path.isfile(dictionary_path): 
-            self.dictionary_words = self.__txt_dictionary_to_dict(dictionary_path)
+            dictionary_words = self.__txt_dictionary_to_dict(dictionary_path)
         
         self.autocomplete = AutoComplete(words = dictionary_words)
         
