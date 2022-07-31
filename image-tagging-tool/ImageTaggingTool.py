@@ -7,7 +7,7 @@ from urllib.parse import unquote
 import fire 
 
 #start the Flask app and define the templates folder path. 
-app = Flask(__name__, static_folder='./templates/lib', template_folder='templates')
+app = Flask(__name__, static_folder='./templates/libs', template_folder='templates')
 #allow cors requests. 
 CORS(app)
 

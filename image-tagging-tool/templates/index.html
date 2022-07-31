@@ -63,6 +63,9 @@
 
         </div>
 
+        <h5 style="margin-top: 5%; margin-left: -40%;">Selected Tags: </h5> <br>
+        <div class="selected-tags"></div>
+
         <!-- <div class="col">
             <button style="margin-left: -55%; width: 60px; height: 40px;" type="button" class="btn btn-primary">tag</button>
             <p id="values"></p>
@@ -70,7 +73,7 @@
 
     </div>
 
-    <button style="margin-top: 15%;" type="button" class="btn btn-success submit-aesthetic-score">Submit</button>
+    <button style="margin-top: 20%;" type="button" class="btn btn-success submit-aesthetic-score">Submit</button>
 
 </div>
 
@@ -162,6 +165,37 @@
     li a:hover:not(.active) {
         background-color: #555;
         color: white;
+    }
+    /* styles for the tags in aesthetic scores task*/
+    
+    .item {
+        background-color: var(--multi-input-item-bg-color, #dedede);
+        border: var(--multi-input-item-border, 1px solid #ccc);
+        border-radius: 2px;
+        color: #222;
+        display: inline-block;
+        font-size: var(--multi-input-item-font-size, 14px);
+        margin: 5px;
+        padding: 2px 25px 2px 5px;
+        pointer-events: none;
+        position: relative;
+        top: -1px;
+    }
+    
+    .item::after {
+        color: black;
+        content: '×';
+        cursor: pointer;
+        font-size: 18px;
+        pointer-events: auto;
+        position: absolute;
+        right: 5px;
+        top: -1px;
+    }
+    
+    .item:hover {
+        background-color: #eee;
+        color: black;
     }
 </style>
 
