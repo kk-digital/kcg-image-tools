@@ -14,6 +14,7 @@ pip install -r src/to/dir/requirements.txt
 
 ## CLI Parameters
 
+* `user_name` _[string]_ - _[required]_ - The user name to be used in the tagging tasks. 
 * `images_dataset_directory` _[string]_ - _[required]_ - the root path of the image dataset directory.
 * `tag_tasks` _[list]_ - _[required]_ - the tagging tasks/labels to use in the tool, and should be provided as a list. 
 
@@ -28,7 +29,7 @@ pip install -r src/to/dir/requirements.txt
 ## Example Usage
 
 ```sh
-python src/to/dir/ImageTaggingTool.py --images_dataset_directory='path/to/my-image-dataset' --tag_tasks=[good,bad] --data_output_directory='path/to/output-directory'
+python src/to/dir/ImageTaggingTool.py --user_name='Mahmoud Saudi' --images_dataset_directory='path/to/my-image-dataset' --tag_tasks=[good,bad] --data_output_directory='path/to/output-directory'
 ```
 
 > Note that if the `data_output_directory` is not created the tool automatically creates it for you. 

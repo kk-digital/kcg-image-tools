@@ -130,3 +130,6 @@ dmypy.json
 
 #collected data 
 /data/
+
+#user settings file
+/image-tagging-tool/user-settings.json

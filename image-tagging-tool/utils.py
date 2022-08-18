@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import random
 from PIL import Image
@@ -25,6 +26,43 @@ class Utils:
         pass 
     
     
+    def create_settings_file(self, username: str, images_dataset_directory: str, tag_tasks: list, data_output_directory: str, dictionary_path: str,  grid_dim: int, samples_seed: int) -> None: 
+        """ creates a `JSON` file format that contains all the user settings. 
+        
+        :param user_name: The user name to be used in the tagging tasks. 
+        :type user_name: str
+        :param images_dataset_directory: the root path of the image dataset directory. 
+        :type images_dataset_directory: str
+        :param tag_tasks: the tagging tasks/labels to use in the tool, and should be provided as a list. 
+        :type tag_tasks: list
+        :param data_output_directory: the directory to write the resultant `json` files inside, the `json` files contains the tagged images metadata.
+        :type data_output_directory: str
+        :param dictionary_path: path to the dictionary to be used in tagging the `Aesthetic scores` task. 
+        :type dictionary_path: str
+        :param grid_dim: the dimension of the grid displaying the images, the grid is a square default dim is `4`. 
+        :type grid_dim: int
+        :param samples_seed: seed of the pseudo random generator generating the sample images generated to be displayed in the grid, default is `None`
+        :type samples_seed: int
+        :returns: 
+        :rtype: None
+        """
+
+        settings_file_path = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__), "user-settings.json"))
+        user_settings = {
+            'username': username, 
+            'images_dataset_directory': images_dataset_directory, 
+            'tag_tasks': tag_tasks , 
+            'data_output_directory': data_output_directory, 
+            'dictionary_path': dictionary_path, 
+            'grid_dim': grid_dim, 
+            'samples_seed': samples_seed, 
+        }
+        
+        with open(settings_file_path, "w", encoding = "utf-8") as settings_file: 
+            json.dump(user_settings, settings_file, indent = 4)
+        
+        return 
+
     def get_all_dictionary(self) -> list[str]: 
         """ method to get all words in the dictionary as a list.  
         

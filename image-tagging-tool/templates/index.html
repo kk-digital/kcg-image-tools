@@ -1,7 +1,7 @@
 {% extends 'base.html' %} {% block head %} {% block sidebar %}
 <ul>
     <li style="display: block; padding: 20px 30px;">
-        <h1>tasks</h1>
+        <h2>tasks</h2>
     </li>
     {% for label in labels %}
     <li><a class="{{'active' if 'label-' + label.name ==  active_label}}" href="#{{label.name}}">label-{{label.name}}</a></li>
@@ -18,7 +18,7 @@
     <!-- <div class="col col-md-5"></div> -->
     <!-- <br> -->
     <label for="username">Username</label>
-    <input type="text" style="text-align: center;" id="username" value="{{username}}">
+    <input type="text" disabled="true" style="text-align: center;" id="username" value="{{username}}">
 </div>
 <!-- <hr> -->
 
@@ -51,10 +51,10 @@
         <button class="score-button">2</button>
     </div>
 
-    <div style="margin-top: 5%; margin-left: 0%;" class="row">
+    <div style="text-align: center;" class="row">
         <div class="col">
             <multi-input>
-                <input class="score-image-tag" type="search" list="tag-name" placeholder="Choose a tag name">
+                <input class="score-image-tag" type="search" list="tag-name" placeholder="Tag">
                 <datalist id="tag-name">
                     {% for predicted in predicted_tags %}
                     <option value="{{predicted}}" />{% endfor %}
@@ -63,7 +63,7 @@
 
         </div>
 
-        <h5 style="margin-top: 5%; margin-left: -40%;">Selected Tags: </h5> <br>
+        <h3 style="text-align: left;">Selected Tags: </h3> <br>
         <div class="selected-tags"></div>
 
         <!-- <div class="col">
@@ -78,6 +78,25 @@
 </div>
 
 <style>
+    @import url(https://cdn.jsdelivr.net/npm/firacode@6.2.0/distr/fira_code.css);
+    * {
+        font-family: 'Fira Code', monospace;
+    }
+    
+    @supports (font-variation-settings: normal) {
+        * {
+            font-family: 'Fira Code Retina', monospace;
+        }
+    }
+    
+     ::placeholder {
+        text-align: center;
+    }
+    
+    .selected-tags {
+        text-align: justify;
+    }
+    
     .score-group {
         text-align: center;
         margin-top: 50px;

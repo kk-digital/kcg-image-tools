@@ -18,7 +18,6 @@ files_list = []
 N = 4 
 seed = None 
    
-   
 #index of the web app. 
 @app.route('/', methods = ['GET'])
 def index(): 
@@ -107,11 +106,13 @@ def label_images():
 
 
 
-def image_tagging_tool_cli(images_dataset_directory: str, tag_tasks: list, data_output_directory: str, dictionary_path: str = None,  grid_dim: int = 4, samples_seed: int = None) -> None: 
+def image_tagging_tool_cli(user_name: str, images_dataset_directory: str, tag_tasks: list, data_output_directory: str, dictionary_path: str = None,  grid_dim: int = 4, samples_seed: int = None) -> None: 
    """ given an image dataset directory and the tag tasks you need to apply for this dataset, the tool runs web UI can be found at 
          http://127.0.0.1:5000 with a grid of images taken from the image directory you have passed to be used for tagging depending 
             on the task you choose, the tagged images metadata can be found inside the `data_output_directory` as `json` files. 
    
+   :param user_name: The user name to be used in the tagging tasks. 
+   :type user_name: str
    :param images_dataset_directory: the root path of the image dataset directory. 
    :type images_dataset_directory: str
    :param tag_tasks: the tagging tasks/labels to use in the tool, and should be provided as a list. 
@@ -149,12 +150,13 @@ def image_tagging_tool_cli(images_dataset_directory: str, tag_tasks: list, data_
    seed = samples_seed
    
    global username
-   username = ""
+   username = user_name
    
    global utils 
    
    utils = Utils(dictionary_path)
-
+   utils.create_settings_file(user_name, images_dataset_directory, tag_tasks, data_output_directory, dictionary_path, grid_dim, samples_seed)
+   
    app.run(debug = True)
    
 if __name__ == '__main__':
