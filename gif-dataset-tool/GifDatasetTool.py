@@ -1,9 +1,7 @@
-from genericpath import isfile
 import hashlib
 import json
 import multiprocessing
-from multiprocessing import pool
-from typing import Tuple, Union
+from typing import Union
 from PIL import Image, ImageSequence
 import os 
 from pathos.multiprocessing import ProcessingPool
