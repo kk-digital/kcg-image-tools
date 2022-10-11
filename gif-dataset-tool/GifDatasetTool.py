@@ -119,7 +119,7 @@ class GifDatasetTools:
 @click.option('--output_folder_path', help='path to the folder to write the results to', type = str, required = True)
 @click.option('--extract_frames', help='option to extract frames out of the GIF image or not.', type = bool, default = True)
 @click.option('--frames_limit', help='the max number of frames to extract from each GIF image in the folder.', type = int, default = 0)
-@click.option('--num_processes', help='the max number of frames to extract from each GIF image in the folder.', type = int, default = multiprocessing.cpu_count())
+@click.option('--num_processes', help='number of processes to use for executing the task.', type = int, default = multiprocessing.cpu_count())
 def process_gif_dataset(folder_path: str, output_folder_path: str, extract_frames: bool = True, frames_limit: int = 0, num_processes: int = multiprocessing.cpu_count()) -> None: 
     """tool to process a folder of GIF images and extract their metadata and option to extract certain number of frames out of each Gif.
     """
