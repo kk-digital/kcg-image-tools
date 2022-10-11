@@ -8,7 +8,7 @@ from pathos.multiprocessing import ProcessingPool
 import numpy as np 
 import click 
 
-class GifDatasetTools: 
+class GIFDatasetTools: 
     """wrapper for methods that help to manipulate and datasets/folders containing gif images. 
     """
     def __init__(self) -> None:
