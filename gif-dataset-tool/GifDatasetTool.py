@@ -77,8 +77,8 @@ class GIFDatasetTools:
             
         return {
             'original_file_name': os.path.abspath(image.filename), 
-            'sha256': GifDatasetTools.image_sha256(image),
-            'number_of_frames': GifDatasetTools.get_number_of_frames(image),
+            'sha256': GIFDatasetTools.image_sha256(image),
+            'number_of_frames': GIFDatasetTools.get_number_of_frames(image),
             'file_size': os.stat(image.filename).st_size , 
             'image_size': "({},{})".format(image.size[0] , image.size[1]),
             'format': image.format.lower(),
@@ -166,8 +166,8 @@ class GIFDatasetTools:
         #compute the image metadata. 
         image_metadata = {
             'original_file_name': os.path.abspath(gif_image.filename), 
-            'sha256': GifDatasetTools.image_sha256(gif_image),
-            'number_of_frames': GifDatasetTools.get_number_of_frames(gif_image),
+            'sha256': GIFDatasetTools.image_sha256(gif_image),
+            'number_of_frames': GIFDatasetTools.get_number_of_frames(gif_image),
             'file_size': os.stat(gif_image.filename).st_size , 
             'image_size': "({},{})".format(gif_image.size[0] , gif_image.size[1]),
             'format': gif_image.format.lower(),
@@ -191,7 +191,7 @@ def process_gif_dataset(folder_path: str, output_folder_path: str, extract_frame
     os.makedirs(output_folder_path, exist_ok = True)
     
     #initialize an instance of the GIF tools class. 
-    gif_tools = GifDatasetTools()
+    gif_tools = GIFDatasetTools()
     
     #get the list of the files for the given directory. 
     files_paths = gif_tools.get_files_list(folder_path, recursive = True)
