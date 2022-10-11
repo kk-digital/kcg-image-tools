@@ -16,6 +16,13 @@ class GifDatasetTools:
     
     def filter_files(self, files: list[str], allowed_exts: list[str]) -> list[str]: 
         """method to filter a list of file names depending on their certain allowed extensions provided in `allowed_exts` list.
+        :param files: the list of files paths to filter. 
+        :type files: list[str]
+        :param allowed_exts: allowed extensions and to ignore any other file with different extension than the provided. 
+        :type allowed_exts: list[str]
+        
+        :returns: a list contains the filtered files. 
+        :rtype: list[str]
         """
         
         return [file for file in files if os.path.splitext(file)[1] in allowed_exts]
@@ -23,7 +30,16 @@ class GifDatasetTools:
     
     def get_files_list(self, folder_path: str, recursive: bool = True) -> list[str]: 
         """method to list all files in the provided directory, if `recursive` is True then 
-                it will loop recursively over the root folder and all its sub-folders. 
+                it will loop recursively over the root folder and all its sub-folders.
+        :param folder_path: the folder path to get all its contents. 
+        :type folder_path: str
+        :param recursive: If it's set to `True` the function will return paths of all files in the given directory 
+                and all its subdirectories and will return the files inside the directory only if `False`, defaults to `True`. 
+        :type recursive: bool
+        
+        :returns: a list contains the filtered files. 
+        :rtype: list[str]
+
         """
         
         if recursive: 
@@ -34,12 +50,26 @@ class GifDatasetTools:
     @staticmethod
     def image_sha256(image: Image.Image) -> str: 
         """compute the sha256 of the given image. 
+        
+        :param image: the PIL image object to compute the sha256 for. 
+        :type image: PIL.Image.Image
+        
+        :returns: a str representing the sha256 of the provided PIL image object. 
+        :rtype: str.
+
         """
         return hashlib.sha256(image.tobytes()).hexdigest()
 
     @staticmethod
     def gif_metadata(image: Union[Image.Image, str]) -> dict: 
         """method to compute the metadata of a given GIF image. 
+
+        :param image: the PIL image object to compute its metadata, or just provide the path of the image.
+        :type image: Union[Image.Image, str]
+        
+        :returns: a python dict represents the computed image metadata. 
+        :rtype: dict
+
         """
         
         if isinstance(image, str):
@@ -57,12 +87,29 @@ class GifDatasetTools:
     @staticmethod
     def save_image(image: Image.Image, path: str) -> None: 
         """save the given image in PNG format at the given path. 
+        
+        :param image: the PIL image to save. 
+        :type image: PIL.Image.Image
+        
+        :param path: path to the save the image at. 
+        :type path: str
+        
+        :returns: saves the image in the given path. 
+        :rtype: None
         """
         image.save(path)
     
     @staticmethod
     def get_number_of_frames(gif_image: Union[str, Image.Image]) -> int: 
         """method to return the number of frames for a given gif image. 
+        
+        :param gif_image: The GIF Image as PIL object or its path on the filesystem. 
+        :type gif_image: Union[str, PIL.Image.Image]
+        
+        
+        :returns: the number of frames of the provided image. 
+        :rtype: int
+
         """
         
         if isinstance(gif_image, str): 
@@ -74,8 +121,24 @@ class GifDatasetTools:
     def extract_gif_frames(gif_image: Union[str, Image.Image], save_folder_path: str, limit: int = 0) ->  dict:
         """method that extracts `limit` number of frames of a given GIF image and writes them as PNG, and returns the GIF image metadata.  
                 if `limit >= actual_frames_number`  then all frames is being returned. 
+                
                 if `limit < actual_frames_number` then `limit` number of frames are selected at random and returned. 
+                
                 if `limit is 0`, then all frames will be extracted
+                
+        :param gif_image: The GIF Image as PIL object or its path on the filesystem. 
+        :type gif_image: Union[str, PIL.Image.Image]
+        
+        :param save_folder_path: The folder used to save the extracted frames at. 
+        :type save_folder_path: str
+        
+        :param limit: max number of frames to be extracted from each of the GIF images. 
+        :type limit: int
+        
+        
+        :returns: the number of frames of the provided image. 
+        :rtype: int
+
         """
         
         #if the provided gid_image variables is a path. 
