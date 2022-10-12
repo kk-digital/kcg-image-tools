@@ -3,7 +3,8 @@
 Set of helping tools for cleaning image datasets and extracting patches from this set of images. 
 
 # Table of Contents
-There is currently 8 standalone tools in the project 
+There is currently 9 standalone tools in the project 
+- [GIFDatasetTools](#GIFDatasetTools)
 - [ImagePatchExtractor](#ImagePatchExtractor)
 - [ImageDatasetCleaner](#ImageDatasetCleaner)
 - [ImageDatasetPreview](#ImageDatasetPreview)
@@ -12,6 +13,12 @@ There is currently 8 standalone tools in the project
 - [ImageTaggingTool](#ImageTaggingTool)
 - [IntegerEncoder](#IntegerEncoder)
 - [TileLerp](#tilelerp)
+
+# GIFDatasetTools
+
+Given a source directory containing GIF images, the tool go through all the images inside the directory and computes each image metadata saves the result into a `JSON` file with name `images_metadata.json`, and an option to extract the frames of each image and specifying a max number of frames to extract for each image. 
+
+For more info about the tool and usage instructions check this [link](gif-dataset-tool)
 
 # ImagePatchExtractor
 A standalone tool for extracting patches from a set of images in a certain directory and output the output concatenation in `.png` format in another directory.
