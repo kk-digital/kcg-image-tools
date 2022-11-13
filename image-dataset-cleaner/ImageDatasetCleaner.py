@@ -89,8 +89,10 @@ class ImageDatasetCleaner:
         """
         
         cwd = os.getcwd()
-        os.chdir(folder_path)
-        patoolib.create_archive(zip_folder_path, tuple(os.listdir(folder_path)))
+        # os.chdir(os.path.abspath(folder_path))
+        # print(cwd)
+        # print(os.listdir(os.path.abspath(folder_path))
+        patoolib.create_archive(os.path.abspath(zip_folder_path), tuple([os.path.join(folder_path, path) for path in os.listdir(os.path.abspath(folder_path))], ))
         os.chdir(cwd)
 
     @staticmethod
