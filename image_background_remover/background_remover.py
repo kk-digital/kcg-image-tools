@@ -72,10 +72,25 @@ def process_directory(file_like_object, output_zip, size_filter, name):
             # Split the filename and extension
             filename, extension = os.path.splitext(os.path.basename(name)) # Modify here to get only filename
             # Append "_bg_removed" to the filename before the extension
-            bg_removed_name = f"{filename}_bg_removed{extension}"
+            bg_removed_name = f"{filename}_bg_removed.jpeg"  # Change extension to jpg
 
             # Get the image data with the background removed
             output = remove(file_like_object.getvalue())
+            
+            # Create an image object from bytes data
+            img = Image.open(io.BytesIO(output))
+
+            # Convert RGBA image to RGB
+            if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
+                img_rgb = Image.new("RGB", img.size, (255, 255, 255))
+                img_rgb.paste(img, mask=img.split()[3])   # 3 is the alpha channel
+                output = img_rgb
+            else:
+                output = img
+
+            # Convert image to jpeg format
+            output_io = io.BytesIO()
+            output.save(output_io, format='JPEG')
 
             # Reset pointer
             file_like_object.seek(0)
@@ -83,7 +98,7 @@ def process_directory(file_like_object, output_zip, size_filter, name):
             output_zip.writestr('images/original_images/' + os.path.basename(name), file_like_object.read()) # Modify here to get only filename
 
             # Save the image with the background removed to the zip file
-            output_zip.writestr('images/bg_removed/' + bg_removed_name, output)
+            output_zip.writestr('images/bg_removed/' + bg_removed_name, output_io.getvalue())
 
             # Increase the file counter
             file_counter += 1
@@ -96,6 +111,7 @@ def process_directory(file_like_object, output_zip, size_filter, name):
 
     # Return the number of files processed
     return file_counter
+
 
 
 def main():
