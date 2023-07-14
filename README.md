@@ -97,3 +97,18 @@ A standalone tool for generating linear interpolation of two images given their 
 Given paths of two images and an interpolation factor called `lerp`, the linear interpolation result of the both images is produced and written as `.png` image in the specified directory, and also an option to preview the result of interpolation between the both images for different `lerp` values ranges from `0` to `1` with a step depending on the specified `preview_grid_size`. 
 
 For more info about the tool and usage instructions check this [link](tile-lerp-tool)
+
+# Background Remover
+
+This script processes ZIP files, extracting images, removing their backgrounds, and storing the original and background removed images in separate ZIP files.
+
+### Script Execution
+
+To run this script, you need to provide the following arguments:
+
+**dataset_path**: This is the input path to your dataset. It could be a directory containing multiple zip files or a single zip file.
+**output_path**: This is the path where the output will be stored.
+**size_filter**: **Default is '512x512'** This is the size of the images you want to process. Images that don't match this size will be skipped. The size should be provided as 'WIDTHxHEIGHT'. 
+
+    !python background_remover.py --dataset_path ./input_zip_files --output_path ./output --size_filter '512x512'
+
