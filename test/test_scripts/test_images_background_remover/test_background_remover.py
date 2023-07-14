@@ -1,7 +1,7 @@
 import pytest
 import os
 import shutil
-from background_remover import process_images
+from image_background_remover.background_remover import remove_backgrounds
 
 def test_background_remover():
     # The input_path should point to a zip file for testing
@@ -11,9 +11,9 @@ def test_background_remover():
     size_filter = '512x512'
 
     # Process the single zip file
-    process_images(input_path, output_path, size_filter)
+    remove_backgrounds(input_path, output_path, size_filter)
 
-    # After running process_images, we should have a new zip file in the output directory.
+    # After running remove_backgrounds, we should have a new zip file in the output directory.
     assert len(os.listdir(output_path)) > 0
 
     # Clean up the output directory after the test

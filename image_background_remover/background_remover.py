@@ -9,7 +9,7 @@ import time
 from PIL import UnidentifiedImageError
 
 
-def process_images(input_path, output_path, size_filter):
+def remove_backgrounds(input_path, output_path, size_filter):
     start_time = time.time()
     size_filter = tuple(map(int, size_filter.split('x')))
     file_counter = 0
@@ -120,7 +120,7 @@ def main():
     parser.add_argument('--size_filter', default='512x512', help='Filter images by size (WIDTHxHEIGHT)')
     parser.add_argument('--output_path', required=True, help='Output path')
     args = parser.parse_args()
-    process_images(args.dataset_path, args.output_path, args.size_filter)
+    remove_backgrounds(args.dataset_path, args.output_path, args.size_filter)
 
 if __name__ == '__main__':
     main()
