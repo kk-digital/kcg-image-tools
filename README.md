@@ -102,7 +102,7 @@ For more info about the tool and usage instructions check this [link](tile-lerp-
 
 This script processes ZIP files, extracting images, removing their backgrounds, and storing the original and background removed images in separate ZIP files.
 
-### Script Execution
+### Usage
 
 To run this script, you need to provide the following arguments:
 
@@ -110,5 +110,32 @@ To run this script, you need to provide the following arguments:
 **output_path**: This is the path where the output will be stored.
 **size_filter**: **Default is '512x512'** This is the size of the images you want to process. Images that don't match this size will be skipped. The size should be provided as 'WIDTHxHEIGHT'. 
 
-    !python background_remover.py --dataset_path ./input_zip_files --output_path ./output --size_filter '512x512'
+    python background_remover.py --dataset_path ./input_zip_files --output_path ./output --size_filter '512x512'
+
+
+# Image Processing Script
+
+This Python script processes images in zip files, specifically extracting relevant details from JSON files, calculating bounding box information for images, and then outputting the processed data as JSON files.
+
+## Description
+
+The script performs the following steps:
+
+1.The input path provided by the user is checked. If it's a directory, all zip files within that directory are processed. If it's a single zip file, only that file is processed.
+
+2.Each zip file is opened and loaded into RAM.
+
+3.JSON files within the zip files are parsed and filtered based on certain conditions.
+
+4.Images are processed to determine the center of the object within the image and calculate its bounding box details.
+
+5.All processed details are combined and stored in a JSON file in the output directory specified by the user.
+
+
+### Usage
+
+You can execute this script using the following command:
+
+
+    python zip_json_processor.py.py --input_path <path_to_zip_files> --output_path <output_directory>
 
