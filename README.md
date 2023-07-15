@@ -115,7 +115,7 @@ To run this script, you need to provide the following arguments:
 
 # Image Processing Script
 
-This Python script processes images in zip files, specifically extracting relevant details from JSON files, calculating bounding box information for images, and then outputting the processed data as JSON files.
+This Python script processes background removed images in zip files, specifically extracting relevant details from JSON files, calculating bounding box information for images, and then outputting the processed data as JSON files.
 
 ## Description
 
@@ -131,11 +131,23 @@ The script performs the following steps:
 
 5.All processed details are combined and stored in a JSON file in the output directory specified by the user.
 
+### step 1
+
+Remove background for the images
+
+    python background_remover.py --dataset_path ./input_zip_files --output_path ./output --size_filter '512x512'
+
+### step 2
+
+Compute Features Of Zip Dataset (from kcg-ml)
+
+    python ./scripts/image_dataset_storage_format/process_dataset.py compute-features-of-zip --image-dataset-path "input_path" --clip-model="ViT-L/14"
+
 
 ### Usage
 
 You can execute this script using the following command:
 
 
-    python zip_json_processor.py.py --input_path <path_to_zip_files> --output_path <output_directory>
+    python zip_json_processor.py --input_path <path_to_zip_files> --output_path <output_directory>
 
