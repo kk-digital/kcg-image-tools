@@ -133,3 +133,5 @@ dmypy.json
 
 #user settings file
 /image-tagging-tool/user-settings.json
+
+.DS_Store
