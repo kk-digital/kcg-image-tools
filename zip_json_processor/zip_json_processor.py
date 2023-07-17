@@ -84,7 +84,7 @@ def process_zip_file(zip_file_path, output_path):
     json_files = filter_and_process_json_files(file_data)
 
     for file_name in tqdm(file_data.keys(), desc='Processing images', unit='image'):  
-        if 'bg_removed' in file_name and file_name.endswith('.jpeg'):
+         if 'images' in file_name and '_bg_removed.jpeg' in file_name:
             img_binary = file_data[file_name]
             img = cv2.imdecode(np.frombuffer(img_binary, np.uint8), -1)
             img_center = (img.shape[1] // 2, img.shape[0] // 2)
