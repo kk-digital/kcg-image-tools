@@ -119,9 +119,9 @@ def process_zip_file(zip_file_path):
 
         with zipfile.ZipFile(temp_zip_path, 'a') as z:
             # Write the json file to the temporary copy of the zip file
-            with z.open(f'{zip_name}/features/bounding-box.json', 'w') as f:
+            with z.open(f'{zip_name}/features/open-cv-bounding-box.json', 'w') as f:
                 f.write(json.dumps(all_records, indent=3).encode('utf-8'))
-                print(f"Output written to '{zip_name}/features/bounding-box.json' inside the zip file")
+                print(f"Output written to '{zip_name}/features/open-cv-bounding-box.json' inside the zip file")
 
         # Replace the original zip file with the modified one
         shutil.move(temp_zip_path, zip_file_path)
