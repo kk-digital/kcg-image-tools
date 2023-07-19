@@ -8,16 +8,17 @@ from tqdm import tqdm
 import time
 from PIL import UnidentifiedImageError
 
-
 def remove_backgrounds(input_path, output_path, size_filter):
     start_time = time.time()
     size_filter = tuple(map(int, size_filter.split('x')))
     file_counter = 0
     zip_counter = 0
-    
+
     os.makedirs(output_path, exist_ok=True)
 
-    # Check if input_path is a directory or a file
+    zip_output_file = None  # Reference to the current zip file
+    zip_size_limit = 500 * 1024 * 1024  # 500 MB
+    
     if os.path.isdir(input_path):
         filenames = [os.path.join(input_path, filename) for filename in os.listdir(input_path) if filename.lower().endswith('.zip')]
     elif os.path.isfile(input_path) and input_path.lower().endswith('.zip'):
@@ -29,16 +30,24 @@ def remove_backgrounds(input_path, output_path, size_filter):
     for filename in filenames:
         zip_start_time = time.time()
         with zipfile.ZipFile(filename, 'r') as input_zip:
-            with zipfile.ZipFile(os.path.join(output_path, os.path.splitext(os.path.basename(filename))[0]) + '.zip', 'w') as output_zip:
-                for name in tqdm(input_zip.namelist(), desc=f"Processing {filename}"):
-                    if not name.endswith(('.jpg', '.jpeg', '.png')):  # only process image files
-                        continue
-                    data = input_zip.read(name)
-                    file_like_object = io.BytesIO(data)
-                    file_counter += process_directory(file_like_object, output_zip, size_filter, name)
-            zip_counter += 1
-            zip_end_time = time.time()
-            print(f"Processed zip file: {os.path.basename(filename)}, time taken: {zip_end_time - zip_start_time}")
+            for name in tqdm(input_zip.namelist(), desc=f"Processing {filename}"):
+                if not name.endswith(('.jpg', '.jpeg', '.png')):  # only process image files
+                    continue
+                data = input_zip.read(name)
+                file_like_object = io.BytesIO(data)
+
+                if zip_output_file is None or os.path.getsize(zip_output_file.filename) >= zip_size_limit:
+                    if zip_output_file is not None:
+                        zip_output_file.close()
+                    zip_counter += 1
+                    zip_output_file = zipfile.ZipFile(os.path.join(output_path, f"{zip_counter}.zip"), 'w')
+                
+                file_counter += process_directory(file_like_object, zip_output_file, size_filter, name)
+        zip_end_time = time.time()
+        print(f"Processed zip file: {os.path.basename(filename)}, time taken: {zip_end_time - zip_start_time}")
+
+    if zip_output_file is not None:
+        zip_output_file.close()
 
     end_time = time.time()
     print(f"Processing finished. Time elapsed: {end_time - start_time} seconds")
@@ -59,48 +68,33 @@ def remove_backgrounds(input_path, output_path, size_filter):
 
 
 def process_directory(file_like_object, output_zip, size_filter, name):
-    # Initialize the file counter
     file_counter = 0
 
     try:
-        # Open the image file
         with Image.open(file_like_object) as img:
-            # If the image is not the right size, skip it
             if img.size != size_filter:
                 return 0
-            
-            # Split the filename and extension
-            filename, extension = os.path.splitext(os.path.basename(name)) # Modify here to get only filename
-            # Append "_bg_removed" to the filename before the extension
-            bg_removed_name = f"{filename}_bg_removed.jpeg"  # Change extension to jpg
 
-            # Get the image data with the background removed
+            filename, extension = os.path.splitext(os.path.basename(name))
+            bg_removed_name = f"{filename}_bg_removed.jpeg"
+
             output = remove(file_like_object.getvalue())
-            
-            # Create an image object from bytes data
             img = Image.open(io.BytesIO(output))
 
-            # Convert RGBA image to RGB
             if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
                 img_rgb = Image.new("RGB", img.size, (255, 255, 255))
-                img_rgb.paste(img, mask=img.split()[3])   # 3 is the alpha channel
+                img_rgb.paste(img, mask=img.split()[3])
                 output = img_rgb
             else:
                 output = img
 
-            # Convert image to jpeg format
             output_io = io.BytesIO()
             output.save(output_io, format='JPEG')
 
-            # Reset pointer
             file_like_object.seek(0)
-            # Save the original image to the zip file
-            output_zip.writestr('images/original_images/' + os.path.basename(name), file_like_object.read()) # Modify here to get only filename
+            output_zip.writestr('images/original_images/' + os.path.basename(name), file_like_object.read())
 
-            # Save the image with the background removed to the zip file
             output_zip.writestr('images/bg_removed/' + bg_removed_name, output_io.getvalue())
-
-            # Increase the file counter
             file_counter += 1
 
     except UnidentifiedImageError:
@@ -109,10 +103,7 @@ def process_directory(file_like_object, output_zip, size_filter, name):
     except Exception as e:
         print(f"Failed to process file {name}. Error: {e}")
 
-    # Return the number of files processed
     return file_counter
-
-
 
 def main():
     parser = argparse.ArgumentParser(description='Remove backgrounds from images in a zip file.')

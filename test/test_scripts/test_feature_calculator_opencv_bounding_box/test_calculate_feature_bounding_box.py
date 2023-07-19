@@ -1,9 +1,9 @@
 import pytest
 import os
 import shutil
-from zip_json_processor.zip_json_processor import process_zip_files
+from feature_calculator_opencv_bounding_box.calculate_feature_bounding_box import process_zip_files
 
-def test_process_zip_files():
+def test_feature_calculator_opencv_bounding_box():
     # The input_path should point to a zip file for testing
     input_path = "./test/test_zip_files/000001.zip"
     # Output path where processed files will be saved

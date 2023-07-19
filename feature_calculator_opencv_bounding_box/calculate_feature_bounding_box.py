@@ -6,6 +6,8 @@ import argparse
 from tqdm import tqdm
 import cv2
 import numpy as np
+from tempfile import TemporaryDirectory
+import shutil
 
 def open_zip_to_ram(zip_path):
     file_data = {}
@@ -66,25 +68,27 @@ def calculate_center_offsets(img_center, object_center):
 
     return distance_squared, distance, x_offset, y_offset
 
-def process_zip_files(input_path, output_path):
+def process_zip_files(input_path):
 
     if os.path.isdir(input_path):  # The input is a directory
         for root, _, files in os.walk(input_path):
             for file in files:
                 if file.endswith('.zip'):
                     zip_file_path = os.path.join(root, file)
-                    process_zip_file(zip_file_path, output_path)
+                    process_zip_file(zip_file_path)
     elif os.path.isfile(input_path):  # The input is a file
         if input_path.endswith('.zip'):
-            process_zip_file(input_path, output_path)
+            process_zip_file(input_path)
 
-def process_zip_file(zip_file_path, output_path):
+def process_zip_file(zip_file_path):
     all_records = []
     file_data = open_zip_to_ram(zip_file_path)
     json_files = filter_and_process_json_files(file_data)
+    # Get the name of the zip file without extension for the directory inside the zip
+    zip_name = os.path.splitext(os.path.basename(zip_file_path))[0]
 
     for file_name in tqdm(file_data.keys(), desc='Processing images', unit='image'):  
-        if 'bg_removed' in file_name and file_name.endswith('.jpeg'):
+         if 'images' in file_name and '_bg_removed.jpeg' in file_name:
             img_binary = file_data[file_name]
             img = cv2.imdecode(np.frombuffer(img_binary, np.uint8), -1)
             img_center = (img.shape[1] // 2, img.shape[0] // 2)
@@ -108,17 +112,23 @@ def process_zip_file(zip_file_path, output_path):
                 })
                 all_records.append(json_files[os.path.basename(file_name)])
 
-    os.makedirs(output_path, exist_ok=True)
-    # Generate output file name based on input file name
-    output_file = os.path.join(output_path, f"{os.path.splitext(os.path.basename(zip_file_path))[0]}.json")
-    with open(output_file, 'w') as f:
-        json.dump(all_records, f, indent=3)
-        print(f"Output written to {output_file}")
+    # Create a temporary directory to store modified files
+    with TemporaryDirectory() as tempdir:
+        # Copy the original zip file to the temporary directory
+        temp_zip_path = shutil.copy(zip_file_path, tempdir)
+
+        with zipfile.ZipFile(temp_zip_path, 'a') as z:
+            # Write the json file to the temporary copy of the zip file
+            with z.open(f'{zip_name}/features/open-cv-bounding-box.json', 'w') as f:
+                f.write(json.dumps(all_records, indent=3).encode('utf-8'))
+                print(f"Output written to '{zip_name}/features/open-cv-bounding-box.json' inside the zip file")
+
+        # Replace the original zip file with the modified one
+        shutil.move(temp_zip_path, zip_file_path)
 
 parser = argparse.ArgumentParser(description='Process JSON records from zip files.')
 parser.add_argument('--input_path', type=str, default='.', help='Path to directory containing zip files or single zip file.')  
-parser.add_argument('--output_path', type=str, default='.', help='Path to output file.')
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    process_zip_files(args.input_path, args.output_path)
+    process_zip_files(args.input_path)
