@@ -151,3 +151,33 @@ You can execute this script using the following command:
 
     python zip_json_processor.py --input_path <path_to_zip_files> --output_path <output_directory>
 
+
+# OpenCV Bounding Box JSON Processor
+
+This script processes JSON records from zip files, extracts bounding box details from images, and generates a modified version of the zip file with the processed data.
+
+Install the required dependencies by running the following command:
+
+   pip install opencv-python tqdm argparse
+
+
+### Functionality
+The script performs the following operations:
+
+1. It opens each zip file and loads it into memory.
+2. Filters and processes JSON files in the zip.
+3. For each image ending with '_bg_removed.jpeg' in the zip file, it calculates a bounding box and the distance to the image center.
+4. Updates JSON files with new information such as the bounding box dimensions, the center of the bounding box, distance to the image center, etc.
+5. Finally, it writes the updated JSON content into a file named 'open-cv-bounding-box.json', which is stored in the 'features' directory inside the same zip file.
+
+Please ensure that the script has necessary permissions to read and write files in the specified directories.   
+    
+### Usage
+
+The script accepts a command line argument --input_path, which is the path to the directory containing zip files or a single zip file to be processed. If not provided, it defaults to the current directory ('.').
+
+For example, you can run the script as follows:
+
+    python calculate_feature_bounding_box.py --input_path=./path_to_zip_files
+
+
