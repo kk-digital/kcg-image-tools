@@ -1,6 +1,7 @@
-import pytest
 import os
+import sys
 import shutil
+sys.path.insert(0, os.getcwd())
 from image_background_remover.background_remover import remove_backgrounds
 
 def test_background_remover():

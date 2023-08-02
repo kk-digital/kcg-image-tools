@@ -1,6 +1,6 @@
-import pytest
 import os
-import shutil
+import sys
+sys.path.insert(0, os.getcwd())
 from feature_calculator_opencv_bounding_box.calculate_feature_bounding_box import process_zip_file
 import zipfile
 
