@@ -135,7 +135,7 @@ The script performs the following steps:
 
 Remove background for the images
 
-    python background_remover.py --dataset_path ./input_zip_files --output_path ./output --size_filter '512x512'
+    python ./image_background_remover/background_remover.py --dataset_path ./input_zip_files --output_path ./output --size_filter '512x512'
 
 ### step 2
 
