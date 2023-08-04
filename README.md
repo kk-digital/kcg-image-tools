@@ -149,7 +149,7 @@ Compute Features Of Zip Dataset (from kcg-ml)
 You can execute this script using the following command:
 
 
-    python zip_json_processor.py --input_path <path_to_zip_files> --output_path <output_directory>
+    python calculate_feature_bounding_box.py --input_path <path_to_zip_files> --output_path <output_directory>
 
 
 # OpenCV Bounding Box JSON Processor
