@@ -113,45 +113,6 @@ To run this script, you need to provide the following arguments:
     python background_remover.py --dataset_path ./input_zip_files --output_path ./output --size_filter '512x512'
 
 
-# Image Processing Script
-
-This Python script processes background removed images in zip files, specifically extracting relevant details from JSON files, calculating bounding box information for images, and then outputting the processed data as JSON files.
-
-## Description
-
-The script performs the following steps:
-
-1.The input path provided by the user is checked. If it's a directory, all zip files within that directory are processed. If it's a single zip file, only that file is processed.
-
-2.Each zip file is opened and loaded into RAM.
-
-3.JSON files within the zip files are parsed and filtered based on certain conditions.
-
-4.Images are processed to determine the center of the object within the image and calculate its bounding box details.
-
-5.All processed details are combined and stored in a JSON file in the output directory specified by the user.
-
-### step 1
-
-Remove background for the images
-
-    python ./image_background_remover/background_remover.py --dataset_path ./input_zip_files --output_path ./output --size_filter '512x512'
-
-### step 2
-
-Compute Features Of Zip Dataset (from kcg-ml)
-
-    python ./scripts/image_dataset_storage_format/process_dataset.py compute-features-of-zip --image-dataset-path "input_path" --clip-model="ViT-L/14"
-
-
-### Usage
-
-You can execute this script using the following command:
-
-
-    python calculate_feature_bounding_box.py --input_path <path_to_zip_files> --output_path <output_directory>
-
-
 # OpenCV Bounding Box JSON Processor
 
 This script processes JSON records from zip files, extracts bounding box details from images, and generates a modified version of the zip file with the processed data.
@@ -166,11 +127,10 @@ The script performs the following operations:
 
 1. It opens each zip file and loads it into memory.
 2. Filters and processes JSON files in the zip.
-3. For each image ending with '_bg_removed.jpeg' in the zip file, it calculates a bounding box and the distance to the image center.
+3. For each image ending in the zip file, it calculates a bounding box and the distance to the image center.
 4. Updates JSON files with new information such as the bounding box dimensions, the center of the bounding box, distance to the image center, etc.
 5. Finally, it writes the updated JSON content into a file named 'open-cv-bounding-box.json', which is stored in the 'features' directory inside the same zip file.
 
-Please ensure that the script has necessary permissions to read and write files in the specified directories.   
     
 ### Usage
 
@@ -178,6 +138,6 @@ The script accepts a command line argument --input_path, which is the path to th
 
 For example, you can run the script as follows:
 
-    python calculate_feature_bounding_box.py --input_path=./path_to_zip_files
+    python calculate_feature_bounding_box.py --input_path=./path_to_zip_files --output_path=./output_folder_path
 
 
