@@ -113,7 +113,7 @@ To run this script, you need to provide the following arguments:
     python background_remover.py --dataset_path ./input_zip_files --output_path ./output --size_filter '512x512'
 
 
-# OpenCV Bounding Box JSON Processor
+# Calculate OpenCV Bounding Box 
 
 This script processes JSON records from zip files, extracts bounding box details from images, and generates a modified version of the zip file with the processed data.
 
