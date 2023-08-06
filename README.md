@@ -98,21 +98,6 @@ Given paths of two images and an interpolation factor called `lerp`, the linear 
 
 For more info about the tool and usage instructions check this [link](tile-lerp-tool)
 
-# Background Remover
-
-This script processes ZIP files, extracting images, removing their backgrounds, and storing the original and background removed images in separate ZIP files.
-
-### Usage
-
-To run this script, you need to provide the following arguments:
-
-**dataset_path**: This is the input path to your dataset. It could be a directory containing multiple zip files or a single zip file.
-**output_path**: This is the path where the output will be stored.
-**size_filter**: **Default is '512x512'** This is the size of the images you want to process. Images that don't match this size will be skipped. The size should be provided as 'WIDTHxHEIGHT'. 
-
-    python background_remover.py --dataset_path ./input_zip_files --output_path ./output --size_filter '512x512'
-
-
 # Calculate OpenCV Bounding Box 
 
 This script processes JSON records from zip files, extracts bounding box details from images, and generates a modified version of the zip file with the processed data.
